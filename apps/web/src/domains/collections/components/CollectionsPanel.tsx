@@ -1,4 +1,5 @@
 import {
+  getCollectionsControllerListQueryKey,
   useCollectionsControllerList,
   useCollectionsControllerRemove,
   useMeControllerMe,
@@ -7,11 +8,13 @@ import { Loading, NoData, PageHeader, Stack } from "@bookmark-manager/ui";
 import { useEffect, useState } from "react";
 
 import { CollectionsList } from "./CollectionsList";
+import { CollectionsSearchField } from "./CollectionsSearchField";
 import { ShareCollectionModal } from "./ShareCollectionModal";
 import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
+import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionsPanel() {
@@ -24,13 +27,19 @@ export function CollectionsPanel() {
   const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(
     null,
   );
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const listParams = debouncedSearch ? { q: debouncedSearch } : undefined;
 
   const meQuery = useMeControllerMe({
     query: { enabled: isApiAuthReady, queryKey: ["/me"] },
   });
 
-  const collectionsQuery = useCollectionsControllerList({
-    query: { enabled: isApiAuthReady, queryKey: ["/collections"] },
+  const collectionsQuery = useCollectionsControllerList(listParams, {
+    query: {
+      enabled: isApiAuthReady,
+      queryKey: getCollectionsControllerListQueryKey(listParams),
+    },
   });
 
   const removeMutation = useCollectionsControllerRemove({
@@ -76,6 +85,8 @@ export function CollectionsPanel() {
   return (
     <Stack className="gap-6">
       <PageHeader title="Collections" />
+
+      <CollectionsSearchField value={search} onChange={setSearch} />
 
       <CollectionsList
         collections={collectionsQuery.data ?? []}
