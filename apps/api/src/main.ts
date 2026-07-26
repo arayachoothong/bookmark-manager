@@ -4,6 +4,10 @@ import { setupSwagger } from "./shared/openapi/swagger.config";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+    credentials: true,
+  });
   if (process.env.NODE_ENV !== "production") {
     setupSwagger(app);
   }
