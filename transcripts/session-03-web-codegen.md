@@ -1,24 +1,33 @@
-# Session notes — contract + web (Tasks 9–13)
+# Session 03 — contract + web (reconstructed)
 
-_Synthesized from SDD reports; not verbatim chat logs._
+_Source: SDD Tasks 9–13 reports + Task 14 ESLint/Swagger fixes. Secrets redacted._
 
-## Goals
+## Prompt (Task 9)
 
-- Swagger + offline OpenAPI export; Orval → `@bookmark-manager/api-client`
-- `packages/ui` primitives
-- Web: Auth0 PKCE, axios token injection, React Query, Router on port 3000
-- Collections and bookmarks pages using generated hooks only
+> Wire Nest Swagger, export OpenAPI offline, Orval → packages/api-client. Web must not hand-copy DTOs.
 
-## Outcomes
+## Messy bits
 
-- `pnpm codegen:api` pipeline documented; web avoids parallel DTO types.
-- UI wired for list/create/share and bookmark filter by collection.
+- Live-server export idea died without DB/Auth0 → offline `export-openapi.ts` Test module.
+- `consistent-type-imports` autofix turned Nest injectables/DTOs into `import type` → runtime `Function at index [0]` / OpenAPI `"Function"` schemas.
+  - Fix: value imports for DI + `@Body`/`@Query` DTOs; disable rule under `apps/api/src` (`eslint.config.mjs`).
+- Orval hook names (`useCollectionsControllerList`, …) ≠ human guesses → web imports adjusted after first `pnpm codegen:api`.
 
-## Deferred
+## Prompt (Tasks 11–13)
 
-- Manual Auth0 login smoke in browser (no Playwright/Cypress in scope).
-- Bonus features (import, tags, search) skipped per plan.
+> Auth0 PKCE on port 3000. Collections + bookmarks UI via generated hooks only. Owner-only mutations in UI.
+
+## Wrong then fixed
+
+1. **API queries fired before access-token getter ready** → 401 spam (`fix(web): gate API queries until auth token getter is ready`).
+2. **Owner actions visible while `/me` loading** → Shared/Delete flash (`fix(web): gate collection owner UI on /me`).
+3. **Bookmark create allowed shared collectionId in UI** → restricted to owned collections (`fix(web): restrict bookmark create to owned collections only`).
+
+## Deferred (honest)
+
+- No Playwright Auth0 smoke — manual browser login not automated; API privacy e2e is the trust signal.
+- Bonuses (import/tags/search) skipped.
 
 ## Token handling
 
-- SPA stores Auth0 session; `setAccessTokenGetter` sends **access token** with API audience `[REDACTED client-specific]` — never ID token.
+SPA uses Auth0 session; `setAccessTokenGetter` sends **access token** with API audience — never ID token. Client id / domain: `[REDACTED]` in env examples only.

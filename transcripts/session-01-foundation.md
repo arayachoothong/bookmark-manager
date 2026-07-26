@@ -1,20 +1,30 @@
-# Session notes — foundation (Tasks 1–3)
+# Session 01 — foundation (reconstructed)
 
-_Synthesized from SDD reports; not verbatim chat logs. Secrets redacted._
+_Source: SDD Tasks 1–3 briefs/reports + early commits. Not a verbatim Cursor export. Secrets redacted._
 
-## Goals
+## Prompt (Task 1)
 
-- Agent rules (`CLAUDE.md`, `AGENTS.md`, Cursor rules)
-- Living doc stubs, privacy-review command
-- Monorepo, Docker Postgres on host **5433**, Prisma schema, migrate, seed
+> Create agent rules so a fresh session can build this takehome without re-explaining.
+> Include privacy: non-member get-by-id → 404; mutations owner-only; CollectionShare read-only;
+> collection delete SetNull bookmarks + cascade shares. Stack: Nest+Prisma+Postgres, React+Vite,
+> Auth0 PKCE, access token Bearer. Add `.agent/commands/privacy-review.md`. Stub API_DESIGN / DECISIONS / AI_WORKFLOW / transcripts / README.
 
-## Outcomes
+## What happened
 
-- Planned ADRs and API design skeleton committed.
-- Postgres + two seeded users for share/bookmark scenarios.
-- ESLint flat config introduced for the monorepo.
+- Wrote `CLAUDE.md` + `AGENTS.md` (mirrored). Agent first draft mentioned employer branding in a comment — stripped per “public docs” rule.
+- Added `.agent/commands/privacy-review.md` checklist (reads / mutations / 404 vs 403 / no hand DTOs).
+- Stubbed living docs; empty transcripts placeholders.
 
-## Notes
+## Prompt (Tasks 2–3)
 
-- Public docs avoid employer/bank branding per spec.
-- Auth0 test tenant values live in `.env.example` only (`[REDACTED]` if copied elsewhere).
+> Scaffold pnpm monorepo apps/api apps/web packages/ui packages/api-client. Docker Postgres.
+> ESLint flat. Prisma schema users/collections/bookmarks/shares. Migrate + seed ≥2 users.
+
+## Messy bits
+
+- First compose mapped Postgres to **5432**; collided with local Postgres → remapped host **5433** (`fix(infra): map local Postgres to host port 5433`).
+- Seed used fake `auth0Sub` values — fine for e2e; later critical-fix had to **link by email** on real Auth0 login (see session 02 / final-fix).
+
+## Outcome
+
+Monorepo + DB + agent rules committed; living docs still thin (filled in Task 14 / this polish pass).
