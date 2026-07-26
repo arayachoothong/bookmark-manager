@@ -168,7 +168,7 @@ describe("Bookmarks privacy (e2e)", () => {
     await userB.get(`/bookmarks/${bookmark.body.id}`).expect(200);
   });
 
-  it("grantee cannot mutate bookmark in shared collection (404)", async () => {
+  it("grantee cannot mutate bookmark in shared collection (403)", async () => {
     const userA = await authRequest(
       "auth0|bm-share-mut-a",
       "bm-share-mut-a@example.com",
@@ -204,7 +204,10 @@ describe("Bookmarks privacy (e2e)", () => {
     const patch = await userB
       .patch(`/bookmarks/${bookmark.body.id}`)
       .send({ title: "Hijack" });
-    expect(patch.status).toBe(404);
+    expect(patch.status).toBe(403);
+
+    const del = await userB.delete(`/bookmarks/${bookmark.body.id}`);
+    expect(del.status).toBe(403);
   });
 
   it("list filter ?collectionId= returns bookmarks in readable collection only", async () => {
@@ -258,7 +261,7 @@ describe("Bookmarks privacy (e2e)", () => {
     expect(privateFilter.status).toBe(404);
   });
 
-  it("create with collectionId requires writable owned collection (404 for stranger/shared)", async () => {
+  it("create with collectionId requires writable collection (404 stranger, 403 grantee)", async () => {
     const userA = await authRequest("auth0|bm-create-a", "bm-create-a@example.com");
     const userB = await authRequest("auth0|bm-create-b", "bm-create-b@example.com");
 
@@ -288,6 +291,6 @@ describe("Bookmarks privacy (e2e)", () => {
       title: "Also nope",
       collectionId: collection.body.id,
     });
-    expect(granteeCreate.status).toBe(404);
+    expect(granteeCreate.status).toBe(403);
   });
 });

@@ -4,6 +4,7 @@ import {
 } from "@nestjs/common";
 import type { Bookmark, User } from "@prisma/client";
 import { CollectionAccessService } from "../../collections/domain/collection-access.service";
+import { ForbiddenError } from "../../../shared/errors/forbidden.error";
 import { NotFoundError } from "../../../shared/errors/not-found.error";
 import { BookmarksRepository } from "../infrastructure/bookmarks.repository";
 import type { CreateBookmarkDto } from "../interface/dto/create-bookmark.dto";
@@ -67,7 +68,7 @@ export class BookmarksService {
     const title = assertNonEmptyString(dto.title, "title");
 
     if (dto.collectionId !== undefined) {
-      await this.collectionAccessService.getOwnedOrThrow(
+      await this.collectionAccessService.getWritableOrThrow(
         user.id,
         dto.collectionId,
       );
@@ -92,7 +93,7 @@ export class BookmarksService {
     const title = assertNonEmptyString(dto.title, "title");
 
     if (dto.collectionId !== undefined && dto.collectionId !== null) {
-      await this.collectionAccessService.getOwnedOrThrow(
+      await this.collectionAccessService.getWritableOrThrow(
         user.id,
         dto.collectionId,
       );
@@ -117,7 +118,7 @@ export class BookmarksService {
     await this.assertCanMutateBookmark(user.id, id);
 
     if (dto.collectionId !== undefined && dto.collectionId !== null) {
-      await this.collectionAccessService.getOwnedOrThrow(
+      await this.collectionAccessService.getWritableOrThrow(
         user.id,
         dto.collectionId,
       );
@@ -175,9 +176,39 @@ export class BookmarksService {
     bookmarkId: string,
   ): Promise<Bookmark> {
     const bookmark = await this.bookmarksRepository.findById(bookmarkId);
-    if (!bookmark || bookmark.ownerId !== userId) {
+    if (!bookmark) {
       throw new NotFoundError("Bookmark not found");
     }
-    return bookmark;
+    if (bookmark.ownerId === userId) {
+      return bookmark;
+    }
+    if (await this.userCanReadBookmark(userId, bookmark)) {
+      throw new ForbiddenError();
+    }
+    throw new NotFoundError("Bookmark not found");
+  }
+
+  private async userCanReadBookmark(
+    userId: string,
+    bookmark: Bookmark,
+  ): Promise<boolean> {
+    if (bookmark.ownerId === userId) {
+      return true;
+    }
+    if (!bookmark.collectionId) {
+      return false;
+    }
+    try {
+      await this.collectionAccessService.getReadableOrThrow(
+        userId,
+        bookmark.collectionId,
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return false;
+      }
+      throw error;
+    }
   }
 }

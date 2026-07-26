@@ -49,18 +49,6 @@ export class CollectionAccessService {
     return this.assertCanWriteCollection(userId, collectionId);
   }
 
-  async getOwnedOrThrow(
-    userId: string,
-    collectionId: string,
-  ): Promise<CollectionAccessRecord> {
-    const collection =
-      await this.collectionAccessPort.findCollectionById(collectionId);
-    if (!collection || collection.ownerId !== userId) {
-      throw new NotFoundError("Collection not found");
-    }
-    return collection;
-  }
-
   async assertCanWriteCollection(
     userId: string,
     collectionId: string,
