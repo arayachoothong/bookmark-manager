@@ -39,7 +39,29 @@ Each task ended with a commit on `feat/bookmark-manager-app` and an SDD report.
 
 ## Prompts
 
-Typical task prompt shape: read `.superpowers/sdd/task-N-brief.md`, implement listed files, run tests named in brief, commit with prescribed message, write `task-N-report.md`. Global invariants from `CLAUDE.md` / `AGENTS.md` (404 for strangers, owner-only writes, access token not ID token).
+### Prompt that worked
+
+Task-scoped brief with invariants + TDD gate (compressed from Task 8):
+
+> Read `.superpowers/sdd/task-8-brief.md`. Implement email-based collection shares.
+> Owner-only share CRUD. Unknown invitee email → **404**. Grantee can read collection/bookmarks;
+> grantee PATCH/DELETE → **403**. Non-member get-by-id → **404**. Write failing e2e first
+> (`shares.e2e-spec.ts`), then implement. Do not invent placeholder users. Commit when e2e green.
+> Update `DECISIONS.md` ADR for share model + 404/403.
+
+Why it worked: status codes and privacy were non-negotiable in the prompt; TDD made the agent's default 403-for-strangers fail visibly.
+
+### Prompt that didn't
+
+Vague web wiring (paraphrase of early Task 12 attempts):
+
+> Add collections pages with Auth0 and call the API.
+
+Failure mode: agent invented DTO types, guessed Orval hook names, and showed Delete/Share before `/me` resolved. Recovery: point at `@bookmark-manager/api-client` exports after `pnpm codegen:api`, require `meQuery` gate, rebuild.
+
+### Typical shape (still used)
+
+Read `.superpowers/sdd/task-N-brief.md` → implement listed files → run named tests → Conventional Commit → write `task-N-report.md`. Global invariants from `CLAUDE.md` / `AGENTS.md`.
 
 ## Privacy review (Task 14)
 
@@ -56,4 +78,4 @@ Typical task prompt shape: read `.superpowers/sdd/task-N-brief.md`, implement li
 
 ## Cost note
 
-Roughly 13 implementation tasks via Cursor subagents; no paid API usage logged in-repo. Wall-clock dominated by TDD e2e iterations and Orval/codegen cycles rather than model turns.
+Roughly 13 implementation tasks via Cursor subagents; no paid API usage logged in-repo. Wall-clock dominated by TDD e2e iterations and Orval/codegen cycles rather than model turns. No separate token metering; cost control was **task-scoped subagents** (one brief → one report) rather than open-ended "build the app" chats.
