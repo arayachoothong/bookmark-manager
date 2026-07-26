@@ -22,17 +22,30 @@ Redesign the bookmark manager UI so browsing is list-first, create actions live 
 | Visual | Clean light: soft gray canvas, charcoal type, one teal/blue accent; no purple/cream-terracotta/newspaper looks |
 | API | Unchanged privacy rules; reuse Orval hooks |
 
-## 3. App shell
+## 3. App layout (`<App />`)
 
-Every authenticated screen wraps in `AppShell`:
+Every authenticated screen wraps in `App` (not `AppShell`):
 
 - Brand mark / product name (hero-level in the bar, not a weak eyebrow)
 - Nav: Collections, Bookmarks (active state on current section)
 - **Create ▾**: “New collection” → `/collections/new`; “New bookmark” → `/bookmarks/new`
 - User email + Log out (existing Auth0 behavior)
 - Soft gray page background; content in a readable max-width column
+- Global alert host (success / fail toasts)
 
-Unauthenticated: keep login CTA on list routes (or a minimal shell without Create).
+Unauthenticated access to `requireAuth` routes is handled by a route-level auth gate (redirect to Auth0 login) — **not** by duplicating login CTAs inside every screen.
+
+Resource failures use dedicated pages:
+
+| Situation | Destination |
+| --- | --- |
+| Unknown client route (`*`) | `/404` |
+| Not invited / no access to a collection or bookmark (API privacy **404**) | `/404` |
+| API 403, or viewer opening an owner-only mutate route (edit/assign) | `/403` |
+
+Do **not** inline “not found / no access” condition trees (or auth modals) inside list/detail screens for those cases — navigate to the error page.
+
+**Product rule:** a signed-in user who is **not the owner and not on the collection invite (share) list** must land on **`/404`** when opening that collection (or a bookmark they cannot access) — same as the API privacy response.
 
 ## 4. Routes
 
@@ -47,6 +60,9 @@ Unauthenticated: keep login CTA on list routes (or a minimal shell without Creat
 | `/bookmarks/:id` | Edit bookmark form |
 | `/bookmarks/:id/assign` | Assign bookmark to a collection (page) |
 | `/callback` | Auth0 callback (unchanged URL) |
+| `/403` | Forbidden |
+| `/404` | Not found |
+| `*` | Catch-all → `/404` |
 
 Update `src/config/routes.config.tsx` and add thin `src/pages/...` shells that render domain screens.
 
@@ -91,7 +107,7 @@ Update `src/config/routes.config.tsx` and add thin `src/pages/...` shells that r
 ### 5.6 Edit bookmark (`/bookmarks/:id`)
 
 - Form for url, title, notes (and optionally collection — or leave collection changes to assign flows to avoid duplication; **prefer** edit form includes collection select for convenience).
-- Owners only; viewers see read-only detail or are redirected with 404/empty (match API: non-member 404).
+- Owners only; non-owners (including shared viewers) navigating here → `/403`. Strangers / not-invited (API privacy 404) → `/404`.
 
 ### 5.7 Assign page (`/bookmarks/:id/assign`)
 
@@ -111,7 +127,7 @@ Mirror existing API:
 | --- | --- | --- | --- | --- |
 | Owner | yes | yes | yes | yes |
 | Shared viewer | yes (shared rows) | no | no | no |
-| Stranger | N/A (404 on get) | — | — | — |
+| Stranger (not invited) | no (UI `/404` on direct open; API 404) | — | — | — |
 
 Hide disallowed actions in the UI; do not rely on UI alone for security.
 
@@ -125,17 +141,21 @@ Hide disallowed actions in the UI; do not rely on UI alone for security.
 
 ## 8. Architecture notes
 
-- Keep `src/pages/` thin shells and domain `*Screen` / components / hooks / services.
-- Lift auth chrome (nav, logout) into `AppShell` so screens stop duplicating login/logout headers where practical.
-- Reuse `@bookmark-manager/api-client` hooks; invalidate via existing query helpers.
-- Add Dialog/Modal primitive to `packages/ui` if missing (MUI Dialog wrapped), plus any menu needed for Create.
+- Keep `src/pages/` thin shells and domain `*Screen` / components / hooks / services / `helpers/`.
+- Layout chrome lives in `src/app/App.tsx` (`<App />`) so screens stop duplicating nav/logout.
+- **One file = one responsibility.** Lists split into `*List` (map), `*ListItem` (row presentation), `*ListItemActions` (owner actions). Screens compose; they do not own row chrome.
+- **Helpers:** pure helpers live in `helpers/*.helper.ts` (domain or `src/lib/helpers/`). Enums stay in `constants/*.constant.ts`. Do not put helper functions inside constant files.
+- Reuse `@bookmark-manager/api-client` hooks; invalidate via existing query services.
+- Shared UI: Dialog/MenuButton + **`Loading`** + **`NoData`** + alert/toast primitives — reuse everywhere; no duplicated loading/empty Typography blocks.
 - Feature flags in `features.config.ts` may gate create/share if already present; defaults remain on.
 
 ## 9. Error handling
 
-- Inline field/form errors on pages.
+- Inline field/form errors on page forms only.
 - Modal errors stay inside the modal.
-- Loading and empty states: short plain copy (“No collections yet”, “No bookmarks yet”) with a single CTA to create when allowed.
+- Mutation **success / failure** also fire a global alert (toast) for consistency.
+- Loading → shared `<Loading />`; empty lists → shared `<NoData />` (short copy + optional CTA).
+- Not invited / no resource access → `/404` (match API privacy). Owner-only mutate as viewer / API 403 → `/403`. Unknown client routes → `/404` (see §3).
 
 ## 10. Out of scope
 
@@ -146,11 +166,12 @@ Hide disallowed actions in the UI; do not rely on UI alone for security.
 
 ## 11. Success criteria
 
-- Shell nav + Create menu works on authenticated pages
+- `<App />` nav + Create menu works on authenticated pages
 - Share is modal; create/edit/assign-page flows work as routes
 - Collection detail lists bookmarks; add goes to prefilled create page
 - Bookmarks list supports delete + assign modal; click opens edit page
-- Shared viewers cannot see mutate actions
+- Shared viewers cannot see mutate actions; **not invited → `/404`**; owner-only mutate as viewer → `/403`; unknown URLs → `/404`
+- Loading / NoData / alerts reused consistently; list rows split item vs actions
 - Visual matches clean-light direction
 - Existing privacy API behavior unchanged; web builds
 

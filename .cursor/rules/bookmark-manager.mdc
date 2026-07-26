@@ -22,7 +22,7 @@ Full rules: `CLAUDE.md` and `AGENTS.md`. Obey these invariants in every session.
 
 ## Engineering
 - TDD for features and security claims; strict TypeScript; no `any`; SRP; DRY.
-- Domain folders: api `src/domains/<domain>/{interface,application,infrastructure,domain,constants}` + `src/shared` (constants = TypeScript `enum` in `*.constant.ts`, same naming as web); web `src/pages/<route>/` + `src/domains/<domain>/{components,hooks,interfaces,constants,services,utils?}` + `src/config/` + `app` + `lib` (domains never contain `pages/`; UI copy stays inline).
+- Domain folders: api `src/domains/<domain>/{interface,application,infrastructure,domain,constants}` + `src/shared` (constants = TypeScript `enum` in `*.constant.ts`, same naming as web); web `src/pages/<route>/` + `src/domains/<domain>/{components,hooks,interfaces,constants,services,helpers?}` + `src/config/` + `app` + `lib` (helpers = `*.helper.ts`; domains never contain `pages/`; UI copy stays inline; layout chrome is `app/App.tsx`).
 - Fix ESLint before done; no blanket `eslint-disable`.
 - Public docs: no employer/bank brand names.
 
