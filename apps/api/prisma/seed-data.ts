@@ -11,7 +11,7 @@ export type DemoCollectionName = (typeof DEMO_COLLECTIONS)[number];
 export type DemoBookmarkSeed = {
   title: string;
   url: string;
-  notes?: string;
+  description?: string;
   collections: readonly DemoCollectionName[];
 };
 
@@ -19,7 +19,7 @@ export const DEMO_BOOKMARKS: readonly DemoBookmarkSeed[] = [
   {
     title: "Design Systems Handbook",
     url: "https://www.designsystems.com/handbook",
-    notes: "Practical guide to design systems.",
+    description: "Practical guide to design systems.",
     collections: ["Design reading", "Engineering"],
   },
   {
@@ -30,7 +30,7 @@ export const DEMO_BOOKMARKS: readonly DemoBookmarkSeed[] = [
   {
     title: "Refactoring UI",
     url: "https://www.refactoringui.com",
-    notes: "Visual design tips for developers.",
+    description: "Visual design tips for developers.",
     collections: ["Design reading", "Later"],
   },
   {
@@ -66,7 +66,7 @@ export const DEMO_BOOKMARKS: readonly DemoBookmarkSeed[] = [
   {
     title: "Uncategorized idea",
     url: "https://example.com/scratch",
-    notes: "Not in any collection yet.",
+    description: "Not in any collection yet.",
     collections: [],
   },
 ];

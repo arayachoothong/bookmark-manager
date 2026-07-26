@@ -20,7 +20,7 @@ async function ensureBookmark(
   input: {
     title: string;
     url: string;
-    notes?: string;
+    description?: string;
     collectionIds: string[];
   },
 ) {
@@ -34,7 +34,7 @@ async function ensureBookmark(
       data: {
         title: input.title,
         url: input.url,
-        notes: input.notes ?? null,
+        description: input.description ?? null,
         owner: { connect: { id: ownerId } },
         ...(input.collectionIds.length > 0
           ? {
@@ -61,10 +61,13 @@ async function ensureBookmark(
     });
   }
 
-  if (input.notes !== undefined && existing.notes !== (input.notes ?? null)) {
+  if (
+    input.description !== undefined &&
+    existing.description !== input.description
+  ) {
     await prisma.bookmark.update({
       where: { id: existing.id },
-      data: { notes: input.notes ?? null },
+      data: { description: input.description },
     });
   }
 
@@ -109,7 +112,7 @@ async function main() {
     await ensureBookmark(candidate.id, {
       title: bookmark.title,
       url: bookmark.url,
-      notes: bookmark.notes,
+      description: bookmark.description,
       collectionIds,
     });
   }
