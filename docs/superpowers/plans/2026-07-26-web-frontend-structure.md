@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Restructure `apps/web` so routes live under `src/pages/`, domains own screens/hooks/interfaces/constants/services (no `pages/`), and routing/labels/feature flags are config-driven — then encode the same conventions in agent rules.
+**Goal:** Restructure `apps/web` so routes live under `src/pages/`, domains own screens/hooks/interfaces/constants/services (no `pages/`), and routing plus feature flags are config-driven — then encode the same conventions in agent rules. UI copy stays inline in components/screens.
 
-**Architecture:** Thin page shells under `src/pages/<route>/` render domain `*Screen` components. `src/config/` owns routes, labels, and feature toggles. `AppRouter` maps `routes.config.tsx` into React Router. Auth0 providers stay in `src/app/providers/`; public URLs (including `/callback`) do not change.
+**Architecture:** Thin page shells under `src/pages/<route>/` render domain `*Screen` components. `src/config/` owns routes and feature toggles (no labels/i18n layer). `AppRouter` maps `routes.config.tsx` into React Router. Auth0 providers stay in `src/app/providers/`; public URLs (including `/callback`) do not change.
 
 **Tech Stack:** React 19, Vite 6, React Router 8, Auth0 React SDK, TanStack Query, MUI, Tailwind, `@bookmark-manager/api-client` (Orval), `@bookmark-manager/ui`, TypeScript strict
 
@@ -16,7 +16,7 @@
 - **Public URLs unchanged:** `/`, `/collections`, `/collections/:id`, `/bookmarks`, `/bookmarks/:id`, `/callback`
 - **Pages:** `src/pages/`; domains never contain `pages/`
 - **Naming:** `*.interface.ts` for UI props; TypeScript `enum` in `*.constant.ts` under `constants/`
-- **Config:** `src/config/{routes,labels,features}.config.*`
+- **Config:** `src/config/{routes,features}.config.*` — do **not** add a labels config; keep copy colocated with UI
 - **Orval:** no hand-copied DTOs; local interfaces are UI-only
 - **Empty folders:** create `interfaces/`, `constants/`, `services/`, `utils/` only when a real file lands
 - **Verification:** `pnpm --filter @bookmark-manager/web build` after each structural task (web has no unit test runner; this is a pure structure move per the takehome TDD scaffolding exception)
@@ -27,7 +27,6 @@
 
 | Path | Responsibility |
 |------|----------------|
-| `apps/web/src/config/labels.config.ts` | Screen titles, empty states, button copy |
 | `apps/web/src/config/features.config.ts` | Feature toggles (`createCollection`, `shareCollection`, `createBookmark`) |
 | `apps/web/src/config/routes.config.tsx` | `{ path, element, requireAuth }[]` for AppRouter |
 | `apps/web/src/config/app-route.interface.ts` | `AppRouteConfig` UI interface |
@@ -51,21 +50,18 @@
 
 ---
 
-### Task 1: Config — labels, features, route interface
+### Task 1: Config — features + route interface
 
 **Files:**
-- Create: `apps/web/src/config/labels.config.ts`
 - Create: `apps/web/src/config/features.config.ts`
 - Create: `apps/web/src/config/app-route.interface.ts`
-- Modify: `apps/web/src/domains/collections/components/CollectionsList.tsx`
 - Modify: `apps/web/src/domains/collections/components/CreateCollectionForm.tsx`
 - Modify: `apps/web/src/domains/collections/components/ShareCollectionForm.tsx`
-- Modify: `apps/web/src/domains/bookmarks/components/BookmarksList.tsx`
 - Modify: `apps/web/src/domains/bookmarks/components/CreateBookmarkForm.tsx`
 
 **Interfaces:**
-- Consumes: existing hardcoded copy in list/form components
-- Produces: `labels`, `features`, `AppRouteConfig` for later tasks
+- Consumes: existing create/share forms
+- Produces: `features`, `AppRouteConfig` for later tasks
 
 - [ ] **Step 1: Create `app-route.interface.ts`**
 
@@ -79,78 +75,7 @@ export interface AppRouteConfig {
 }
 ```
 
-- [ ] **Step 2: Create `labels.config.ts`**
-
-```ts
-export const labels = {
-  collections: {
-    title: "Collections",
-    empty: "No collections yet. Create one above.",
-    ownedByYou: "Owned by you",
-    sharedReadOnly: "Shared with you (read-only)",
-    youOwn: "You own this collection",
-    sharedWithYou: "Shared with you (read-only)",
-    loadingSession: "Loading session…",
-    loadingList: "Loading collections…",
-    loadingAccount: "Loading account…",
-    loadListError: "Could not load collections.",
-    loadAccountError: "Could not load account.",
-    notFound: "Collection not found or you do not have access.",
-    missingId: "Missing collection id.",
-    back: "Back",
-    backToList: "Back to collections",
-    delete: "Delete",
-    deleteCollection: "Delete collection",
-    peopleWithAccess: "People with access",
-    loadingShares: "Loading shares…",
-    loadSharesError: "Could not load shares.",
-    notSharedYet: "Not shared with anyone yet.",
-    updatedPrefix: "Updated",
-  },
-  bookmarks: {
-    title: "Bookmarks",
-    empty: "No bookmarks yet. Create one above.",
-    ownedByYou: "Owned by you",
-    sharedReadOnly: "Shared collection (read-only)",
-    youOwn: "You own this bookmark",
-    sharedWithYou: "Shared collection (read-only)",
-    loadingSession: "Loading session…",
-    loadingList: "Loading bookmarks…",
-    loadingAccount: "Loading account…",
-    loadListError: "Could not load bookmarks.",
-    loadAccountError: "Could not load account.",
-    notFound: "Bookmark not found or you do not have access.",
-    missingId: "Missing bookmark id.",
-    back: "Back",
-    backToList: "Back to bookmarks",
-    delete: "Delete",
-    deleteBookmark: "Delete bookmark",
-    url: "URL",
-    notes: "Notes",
-    collection: "Collection",
-    viewCollection: "View collection",
-    notInCollection: "Not in a collection",
-    updatedPrefix: "Updated",
-    navCollections: "Collections",
-  },
-  auth: {
-    logIn: "Log in",
-    logOut: "Log out",
-    completingSignIn: "Completing sign-in…",
-    loginFailedPrefix: "Login failed:",
-  },
-  share: {
-    submit: "Share",
-    success: "Share invite sent.",
-  },
-  common: {
-    collectionTitle: "Collection",
-    bookmarkTitle: "Bookmark",
-  },
-} as const;
-```
-
-- [ ] **Step 3: Create `features.config.ts`**
+- [ ] **Step 2: Create `features.config.ts`**
 
 ```ts
 export const features = {
@@ -160,19 +85,15 @@ export const features = {
 } as const;
 ```
 
-- [ ] **Step 4: Wire labels + feature gates into list/form components**
+- [ ] **Step 3: Gate create/share forms on feature flags (copy stays inline)**
 
-In `CollectionsList.tsx`: import `labels` from `../../../config/labels.config`; replace empty/owned/shared strings with `labels.collections.*`; replace Delete button text with `labels.collections.delete`.
+In `CreateCollectionForm.tsx`: import `features` from `../../../config/features.config`; early-return `null` when `!features.createCollection`. Keep all existing strings as-is.
 
-In `BookmarksList.tsx`: same pattern with `labels.bookmarks.*`.
-
-In `CreateCollectionForm.tsx`: wrap the form return in `features.createCollection ? (…) : null` (import `features` from `../../../config/features.config`). Keep existing form internals.
-
-In `ShareCollectionForm.tsx`: early-return `null` when `!features.shareCollection`; use `labels.share.submit` / `labels.share.success` for button and success copy.
+In `ShareCollectionForm.tsx`: early-return `null` when `!features.shareCollection`. Keep button/success copy inline (`Share`, `Share invite sent.`).
 
 In `CreateBookmarkForm.tsx`: early-return `null` when `!features.createBookmark`.
 
-- [ ] **Step 5: Verify build**
+- [ ] **Step 4: Verify build**
 
 Run:
 
@@ -182,14 +103,14 @@ pnpm --filter @bookmark-manager/web build
 
 Expected: exit 0 (tsc + vite build succeed).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/web/src/config apps/web/src/domains/collections/components apps/web/src/domains/bookmarks/components
+git add apps/web/src/config apps/web/src/domains/collections/components/CreateCollectionForm.tsx apps/web/src/domains/collections/components/ShareCollectionForm.tsx apps/web/src/domains/bookmarks/components/CreateBookmarkForm.tsx
 git commit -m "$(cat <<'EOF'
-refactor(web): add labels/features config and wire into forms
+refactor(web): add features config and AppRouteConfig interface
 
-Centralize UI copy and feature toggles under src/config before the pages move.
+Gate create/share forms on toggles; leave UI copy colocated with components.
 EOF
 )"
 ```
@@ -212,7 +133,7 @@ EOF
 - Keep old `domains/collections/pages/*` until Step 6 of this task deletes them after AppRouter points at new pages for collections only
 
 **Interfaces:**
-- Consumes: `labels`, `features`, current `CollectionsPage` / `CollectionDetailPage` bodies, `useCollectionsQuery`
+- Consumes: `features`, current `CollectionsPage` / `CollectionDetailPage` bodies, `useCollectionsQuery`
 - Produces: `CollectionsScreen`, `CollectionDetailScreen`, page shells, `CollectionAccessRole`, `CollectionsListProps`, `createCollectionsQueryService`
 
 - [ ] **Step 1: Add access-role constant (TypeScript enum)**
@@ -248,14 +169,14 @@ export interface CollectionsListProps {
 }
 ```
 
-Update `CollectionsList.tsx` to import `CollectionsListProps` from that file (remove local type). Use `collectionAccessRole` + `CollectionAccessRole` when choosing owned vs shared label:
+Update `CollectionsList.tsx` to import `CollectionsListProps` from that file (remove local type). Use `collectionAccessRole` + `CollectionAccessRole` when choosing owned vs shared caption strings (keep the strings inline):
 
 ```ts
 const role = collectionAccessRole(currentUserId, collection.ownerId);
 const caption =
   role === CollectionAccessRole.Owner
-    ? labels.collections.ownedByYou
-    : labels.collections.sharedReadOnly;
+    ? "Owned by you"
+    : "Shared with you (read-only)";
 ```
 
 - [ ] **Step 3: Add collections query service; thin the hook**
@@ -301,13 +222,13 @@ export function useCollectionsQuery() {
 
 - [ ] **Step 4: Create `CollectionsScreen.tsx`**
 
-Move the body of `domains/collections/pages/CollectionsPage.tsx` into `CollectionsScreen` (rename export). Replace hardcoded strings with `labels.collections.*` / `labels.auth.*`. Gate `<CreateCollectionForm />` is already handled inside the form via features; keep rendering `<CreateCollectionForm />` as today.
+Move the body of `domains/collections/pages/CollectionsPage.tsx` into `CollectionsScreen` (rename export). Keep existing inline copy. Gate `<CreateCollectionForm />` is already handled inside the form via features; keep rendering `<CreateCollectionForm />` as today.
 
 Export: `export function CollectionsScreen()`.
 
 - [ ] **Step 5: Create `CollectionDetailScreen.tsx`**
 
-Move body of `CollectionDetailPage.tsx` into `CollectionDetailScreen`. Use `labels` for all user-visible strings. Use `collectionAccessRole` for owner vs viewer subtitle. Keep `ShareCollectionForm` / delete UI for owners only (feature flag already inside share form).
+Move body of `CollectionDetailPage.tsx` into `CollectionDetailScreen`. Keep existing inline copy. Use `collectionAccessRole` for owner vs viewer subtitle. Keep `ShareCollectionForm` / delete UI for owners only (feature flag already inside share form).
 
 - [ ] **Step 6: Create thin pages and point AppRouter collections routes at them**
 
@@ -378,7 +299,7 @@ EOF
 - Delete: `apps/web/src/domains/bookmarks/pages/*`
 
 **Interfaces:**
-- Consumes: current bookmark pages, `labels`
+- Consumes: current bookmark pages, `features`
 - Produces: `BookmarksScreen`, `BookmarkDetailScreen`, page shells, `BookmarkAccessRole`, `BookmarksListProps`
 
 - [ ] **Step 1: Add bookmark access constant**
@@ -414,11 +335,11 @@ export interface BookmarksListProps {
 }
 ```
 
-Update `BookmarksList.tsx` to import it and use `bookmarkAccessRole` + labels (already wired in Task 1 for empty/owned strings).
+Update `BookmarksList.tsx` to import it and use `bookmarkAccessRole` for owned vs shared caption (keep strings inline).
 
 - [ ] **Step 3: Create screens from current pages**
 
-Move `BookmarksPage` → `BookmarksScreen`; move `BookmarkDetailPage` → `BookmarkDetailScreen`. Replace remaining hardcoded strings with `labels.bookmarks.*` / `labels.auth.*` / `labels.common.*`.
+Move `BookmarksPage` → `BookmarksScreen`; move `BookmarkDetailPage` → `BookmarkDetailScreen`. Keep existing inline copy as-is.
 
 - [ ] **Step 4: Thin pages + AppRouter**
 
@@ -479,7 +400,7 @@ EOF
 
 - [ ] **Step 1: Create callback page shell**
 
-Move `CallbackPage` body into the page file (callback stays thin — no separate screen required). Use `labels.auth.*` for copy:
+Move `CallbackPage` body into the page file (callback stays thin — no separate screen required). Keep existing inline copy:
 
 ```tsx
 // apps/web/src/pages/auth/callback/index.tsx
@@ -488,8 +409,6 @@ import { CircularProgress, Typography } from "@mui/material";
 import { Stack } from "@bookmark-manager/ui";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
-
-import { labels } from "../../../config/labels.config";
 
 export function CallbackPage() {
   const { error, isLoading, isAuthenticated } = useAuth0();
@@ -505,7 +424,7 @@ export function CallbackPage() {
     return (
       <Stack className="min-h-screen items-center justify-center p-6">
         <Typography color="error" variant="body1">
-          {labels.auth.loginFailedPrefix} {error.message}
+          Login failed: {error.message}
         </Typography>
       </Stack>
     );
@@ -514,7 +433,7 @@ export function CallbackPage() {
   return (
     <Stack className="min-h-screen items-center justify-center gap-4">
       <CircularProgress size={32} />
-      <Typography variant="body2">{labels.auth.completingSignIn}</Typography>
+      <Typography variant="body2">Completing sign-in…</Typography>
     </Stack>
   );
 }
@@ -669,8 +588,8 @@ alwaysApply: false
 
 ## Config
 - `src/config/routes.config.tsx` — `{ path, element, requireAuth }`
-- `src/config/labels.config.ts` — UI copy
 - `src/config/features.config.ts` — feature toggles
+- UI copy stays inline in components/screens — do **not** add a labels/i18n config
 - Public URLs must not change without an explicit Auth0 + docs update (`/callback` stays `/callback`).
 ```
 
@@ -687,7 +606,7 @@ web `src/domains/<domain>/{components,hooks,pages}` + `app` + `lib`
 New:
 
 ```text
-web `src/pages/<route>/` + `src/domains/<domain>/{components,hooks,interfaces,constants,services,utils?}` + `src/config/` + `app` + `lib` (domains never contain `pages/`)
+web `src/pages/<route>/` + `src/domains/<domain>/{components,hooks,interfaces,constants,services,utils?}` + `src/config/` + `app` + `lib` (domains never contain `pages/`; UI copy stays inline)
 ```
 
 - [ ] **Step 3: Append ADR to `DECISIONS.md`**
@@ -695,8 +614,8 @@ web `src/pages/<route>/` + `src/domains/<domain>/{components,hooks,interfaces,co
 ```md
 ## ADR: Thin pages + config-driven web structure (2026-07-26)
 
-- **Decision:** Move route entrypoints to `apps/web/src/pages/`; keep domain logic in screens/hooks/services; drive router/labels/features from `src/config/`.
-- **Why:** Clear Next-like mental model, tighter domain boundaries, agent-friendly placement rules without changing product URLs.
+- **Decision:** Move route entrypoints to `apps/web/src/pages/`; keep domain logic in screens/hooks/services; drive router and feature flags from `src/config/`. Keep UI copy colocated with components (no labels config).
+- **Why:** Clear Next-like mental model and tighter domain boundaries without over-abstracting copy for a small app.
 - **Consequences:** Page files are shells; Auth0 callback file path may use `pages/auth/callback` while URL remains `/callback`.
 ```
 
@@ -735,8 +654,8 @@ test -f apps/web/src/pages/bookmarks/index.tsx
 test -f apps/web/src/pages/bookmarks/\[id\]/index.tsx
 test -f apps/web/src/pages/auth/callback/index.tsx
 test -f apps/web/src/config/routes.config.tsx
-test -f apps/web/src/config/labels.config.ts
 test -f apps/web/src/config/features.config.ts
+test ! -f apps/web/src/config/labels.config.ts
 test -f .cursor/rules/web-frontend-structure.mdc
 ```
 
@@ -782,7 +701,7 @@ EOF
 | `src/pages/` URL-mirrored; no domain `pages/` | 2, 3, 4 |
 | Per-domain `*.interface.ts` | 2, 3 |
 | `enum` in `*.constant.ts` | 2, 3 |
-| Config: routes + labels + features | 1, 4 |
+| Config: routes + features (no labels) | 1, 4 |
 | Auth callback in `pages/auth/callback/`; providers unchanged | 4 |
 | Domains allow components/hooks/interfaces/constants/services/utils | 2 (utils optional — not required) |
 | Thin pages + `*Screen` | 2, 3 |
@@ -794,4 +713,4 @@ EOF
 | No API/product/visual scope creep | Global constraints |
 
 **Placeholder scan:** none intentional.  
-**Type consistency:** `AppRouteConfig`, `labels`, `features`, `CollectionAccessRole`, `BookmarkAccessRole`, `CollectionsListProps`, `BookmarksListProps`, `createCollectionsQueryService` names are stable across tasks.
+**Type consistency:** `AppRouteConfig`, `features`, `CollectionAccessRole`, `BookmarkAccessRole`, `CollectionsListProps`, `BookmarksListProps`, `createCollectionsQueryService` names are stable across tasks.

@@ -6,7 +6,7 @@
 
 ## 1. Goal
 
-Restructure the React web app so route pages live outside domains (Next.js-style URL mirroring), domains own reusable UI/logic with clear folder conventions (`interfaces/`, `constants/` with TypeScript enums, optional `services/`), and routing/labels/feature flags are config-driven. Encode the same conventions in Cursor and dual-agent docs so future work stays consistent.
+Restructure the React web app so route pages live outside domains (Next.js-style URL mirroring), domains own reusable UI/logic with clear folder conventions (`interfaces/`, `constants/` with TypeScript enums, optional `services/`), and routing plus feature flags are config-driven. UI copy stays inline in components/screens (no labels config). Encode the same conventions in Cursor and dual-agent docs so future work stays consistent.
 
 **Non-goals:** URL redesign, Auth0 callback path changes, visual redesign, form-schema frameworks, API changes.
 
@@ -17,7 +17,7 @@ Restructure the React web app so route pages live outside domains (Next.js-style
 | Pages | `src/pages/<route>/` mirroring route segments; domains have no `pages/` |
 | Interfaces | Per-domain `interfaces/*.interface.ts` (UI/view models only) |
 | Enums | TypeScript `enum` in files named `*.constant.ts` under `constants/` |
-| Config | Routes + UI labels/copy + feature toggles under `src/config/` |
+| Config | Routes + feature toggles under `src/config/`; UI copy stays inline in components/screens |
 | Auth | Callback page under `pages/auth/callback/`; providers stay in `src/app/providers/` |
 | Domains | Allowed: `components/`, `hooks/`, `interfaces/`, `constants/`, `services/`, optional `utils/` |
 | Deliverable | Refactor existing web + encode rules in Cursor/agent docs |
@@ -38,7 +38,6 @@ apps/web/src/
     bookmarks/[id]/index.tsx
   config/
     routes.config.ts
-    labels.config.ts
     features.config.ts
   domains/
     auth/                   # hooks (+ constants/interfaces if needed); no pages
@@ -51,7 +50,7 @@ apps/web/src/
 
 - **Pages:** route shells only. Import domain screens/components; no business logic beyond wiring params.
 - **Domains:** no `pages/`. Prefer `*Screen` components for former page bodies.
-- **Config:** single source for paths, auth requirements, copy, and feature flags.
+- **Config:** single source for paths, auth requirements, and feature flags. Copy stays colocated with UI.
 - **lib/:** cross-cutting only (e.g. API client token wiring); not domain-specific.
 
 ## 4. Config & routing
@@ -73,15 +72,11 @@ Declarative entries shaped like `{ path, element, requireAuth }`. `AppRouter` ma
 
 Folder layout may use `auth/callback` for organization; the **URL remains `/callback`**.
 
-### 4.2 `labels.config.ts`
-
-Centralize screen titles, empty states, and button copy used by screens/components. Prefer importing labels over hardcoding where practical; do not invent a full i18n system.
-
-### 4.3 `features.config.ts`
+### 4.2 `features.config.ts`
 
 Boolean toggles for optional UI (e.g. share form, create forms). Defaults preserve current behavior (`true` for existing features). Components gate on flags; this refactor does not delete feature code behind flags.
 
-### 4.4 Auth
+### 4.3 Auth
 
 - Providers remain in `app/providers/`.
 - Callback page handles Auth0 redirect only.
@@ -118,7 +113,7 @@ Optional thin wrappers over Orval for repeated query options, invalidation, or m
 
 Behavior-preserving refactor:
 
-1. Add `src/config/` (`routes`, `labels`, `features`).
+1. Add `src/config/` (`routes`, `features`).
 2. Add `src/pages/` shells; move page bodies into domain `*Screen` components.
 3. Delete `domains/*/pages/`.
 4. Point `AppRouter` at `routes.config.ts`.
@@ -132,7 +127,7 @@ Document for both Cursor and Claude/agents:
 
 - Pages live under `src/pages/`; domains never contain `pages/`.
 - Domain allowed subfolders and naming: `*.interface.ts`, `*.constant.ts` (enums).
-- Config ownership: routes, labels, features under `src/config/`.
+- Config ownership: routes and features under `src/config/`; do not invent a labels/i18n layer — keep copy inline.
 - Orval types from `@bookmark-manager/api-client` only; local interfaces are UI-only.
 - Thin pages + domain screens pattern.
 - Public URLs must not change without an explicit Auth0/docs update.
@@ -154,7 +149,7 @@ Document for both Cursor and Claude/agents:
 ## 10. Success criteria
 
 - URL-mirrored `src/pages/` with no `domains/*/pages/`
-- Config-driven router + labels + feature toggles
+- Config-driven router + feature toggles; copy stays inline
 - Domains follow allowed folder/naming conventions
 - Agent rules updated so a fresh session places new UI files correctly
 - Existing product behavior and Auth0 callback path preserved
