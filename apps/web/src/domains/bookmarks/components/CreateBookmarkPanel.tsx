@@ -48,7 +48,7 @@ export function CreateBookmarkPanel() {
   const [values, setValues] = useState<BookmarkFormValues>(() => ({
     url: "",
     title: "",
-    notes: "",
+    description: "",
     collectionIds: ownedCollectionPrefill(
       ownedCollections,
       queryCollectionId,
@@ -118,12 +118,12 @@ export function CreateBookmarkPanel() {
     if (!trimmedUrl || !trimmedTitle) {
       return;
     }
-    const trimmedNotes = values.notes.trim();
+    const trimmedDescription = values.description.trim();
     createMutation.mutate({
       data: {
         url: trimmedUrl,
         title: trimmedTitle,
-        ...(trimmedNotes ? { notes: trimmedNotes } : {}),
+        ...(trimmedDescription ? { description: trimmedDescription } : {}),
         ...(values.collectionIds.length > 0
           ? { collectionIds: values.collectionIds }
           : {}),

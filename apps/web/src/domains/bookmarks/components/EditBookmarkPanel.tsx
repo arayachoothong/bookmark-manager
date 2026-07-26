@@ -47,7 +47,7 @@ export function EditBookmarkPanel() {
   const [values, setValues] = useState<BookmarkFormValues>({
     url: "",
     title: "",
-    notes: "",
+    description: "",
     collectionIds: [],
   });
   const [hydrated, setHydrated] = useState(false);
@@ -60,7 +60,7 @@ export function EditBookmarkPanel() {
     setValues({
       url: bookmarkQuery.data.url,
       title: bookmarkQuery.data.title,
-      notes: bookmarkQuery.data.notes ?? "",
+      description: bookmarkQuery.data.description ?? "",
       collectionIds: bookmarkQuery.data.collectionIds,
     });
     setHydrated(true);
@@ -137,13 +137,13 @@ export function EditBookmarkPanel() {
     if (!trimmedUrl || !trimmedTitle) {
       return;
     }
-    const trimmedNotes = values.notes.trim();
+    const trimmedDescription = values.description.trim();
     patchMutation.mutate({
       id,
       data: {
         url: trimmedUrl,
         title: trimmedTitle,
-        notes: trimmedNotes ? trimmedNotes : null,
+        description: trimmedDescription ? trimmedDescription : null,
         collectionIds: values.collectionIds,
       },
     });

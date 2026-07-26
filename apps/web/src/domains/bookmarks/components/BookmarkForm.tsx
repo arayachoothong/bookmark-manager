@@ -6,7 +6,7 @@ import { BookmarkCollectionsField } from "./BookmarkCollectionsField";
 export type BookmarkFormValues = {
   url: string;
   title: string;
-  notes: string;
+  description: string;
   collectionIds: string[];
 };
 
@@ -59,9 +59,9 @@ export function BookmarkForm({
       />
       <TextField
         label="Description"
-        value={values.notes}
+        value={values.description}
         onChange={(event) =>
-          onChange({ ...values, notes: event.target.value })
+          onChange({ ...values, description: event.target.value })
         }
         disabled={disabled}
         multiline
