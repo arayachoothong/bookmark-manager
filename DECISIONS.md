@@ -52,6 +52,8 @@
 
 **Decision:** Postgres 16 in Docker (host port 5432), Prisma ORM, migrations + seed (≥2 users).
 
+Compose publishes Postgres on host port **5432**, aligned with the README and `.env.example`. The earlier **5433** setting was only a local collision workaround and is no longer the repository default.
+
 **Consequences:** API owns schema; web never imports Prisma types.
 
 **Agent steer:** Agents often default to SQLite “for the takehome.” We locked Docker Postgres 16 + host **5432** in compose/README early so seed/e2e matched the brief’s relational DB expectation.
