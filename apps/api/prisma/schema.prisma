@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  auth0Sub  String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collections Collection[]
+  bookmarks   Bookmark[]
+  shares      CollectionShare[] @relation("GranteeShares")
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
+  shares    CollectionShare[]
+}
+
+model Bookmark {
+  id           String   @id @default(cuid())
+  url          String
+  title        String
+  notes        String?
+  collectionId String?
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner      User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+}
+
+model CollectionShare {
+  id            String   @id @default(cuid())
+  collectionId  String
+  granteeUserId String
+  createdAt     DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  grantee    User       @relation("GranteeShares", fields: [granteeUserId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, granteeUserId])
+}
