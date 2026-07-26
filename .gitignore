@@ -9,3 +9,4 @@ apps/*/.env
 coverage/
 .pnpm-debug.log
 *.tsbuildinfo
+apps/web/e2e/.env
