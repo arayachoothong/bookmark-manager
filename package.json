@@ -5,6 +5,10 @@
   "scripts": {
     "lint": "eslint .",
     "test": "pnpm --filter @bookmark-manager/api test && pnpm --filter @bookmark-manager/api test:e2e && pnpm --filter @bookmark-manager/web test",
+    "dev:prep": "pnpm db:up && ./scripts/wait-for-postgres.sh && pnpm --filter @bookmark-manager/api exec prisma generate && pnpm --filter @bookmark-manager/api exec prisma migrate deploy",
+    "dev:apps": "concurrently -n api,web -c blue,green --kill-others-on-fail \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev": "pnpm dev:prep && pnpm dev:apps",
+    "dev:seed": "pnpm dev:prep && pnpm --filter @bookmark-manager/api prisma:seed && pnpm dev:apps",
     "dev:api": "pnpm --filter @bookmark-manager/api start:dev",
     "dev:web": "pnpm --filter @bookmark-manager/web dev",
     "codegen:api": "pnpm --filter @bookmark-manager/api export:openapi && orval",
@@ -15,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "concurrently": "^10.0.4",
     "eslint": "^9.18.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "orval": "^7.5.0",
