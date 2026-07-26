@@ -41,6 +41,8 @@ pnpm dev:api    # http://localhost:4000 — Swagger at /api in dev
 pnpm dev:web    # http://localhost:3000
 ```
 
+Demo data: `prisma:seed` creates **3 collections** and **10 bookmarks** owned by `candidate@test.com` (plus Alice’s private collection for share demos). On first Auth0 login, if your token email matches `candidate@test.com`, the API links that user and the demo rows appear. To use your own Auth0 email, change the candidate email in `apps/api/prisma/seed.ts` before seeding.
+
 The API enables CORS for `http://localhost:3000` (override with `CORS_ORIGIN`) so the Vite SPA can call the API with credentials during local dev.
 
 Regenerate the typed client after API contract changes:
