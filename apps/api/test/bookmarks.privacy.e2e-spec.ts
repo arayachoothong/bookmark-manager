@@ -44,6 +44,7 @@ describe("Bookmarks privacy (e2e)", () => {
   });
 
   afterEach(async () => {
+    await prisma.bookmarkCollection.deleteMany();
     await prisma.collectionShare.deleteMany();
     await prisma.bookmark.deleteMany();
     await prisma.collection.deleteMany();
@@ -153,7 +154,7 @@ describe("Bookmarks privacy (e2e)", () => {
       .send({
         url: "https://example.com/shared",
         title: "In shared",
-        collectionId: collection.body.id,
+        collectionIds: [collection.body.id],
       })
       .expect(201);
 
@@ -191,7 +192,7 @@ describe("Bookmarks privacy (e2e)", () => {
       .send({
         url: "https://example.com/m",
         title: "Mine",
-        collectionId: collection.body.id,
+        collectionIds: [collection.body.id],
       })
       .expect(201);
 
@@ -231,7 +232,7 @@ describe("Bookmarks privacy (e2e)", () => {
       .send({
         url: "https://example.com/1",
         title: "In col1",
-        collectionId: col1.body.id,
+        collectionIds: [col1.body.id],
       })
       .expect(201);
     await userA
@@ -239,7 +240,7 @@ describe("Bookmarks privacy (e2e)", () => {
       .send({
         url: "https://example.com/2",
         title: "In col2",
-        collectionId: col2.body.id,
+        collectionIds: [col2.body.id],
       })
       .expect(201);
 
@@ -262,7 +263,7 @@ describe("Bookmarks privacy (e2e)", () => {
     expect(privateFilter.status).toBe(404);
   });
 
-  it("create with collectionId requires writable collection (404 stranger, 403 grantee)", async () => {
+  it("create with collectionIds requires writable collections (404 stranger, 403 grantee)", async () => {
     const userA = await authRequest("auth0|bm-create-a", "bm-create-a@example.com");
     const userB = await authRequest("auth0|bm-create-b", "bm-create-b@example.com");
 
@@ -276,7 +277,7 @@ describe("Bookmarks privacy (e2e)", () => {
     const strangerCreate = await userB.post("/bookmarks").send({
       url: "https://example.com/x",
       title: "Nope",
-      collectionId: collection.body.id,
+      collectionIds: [collection.body.id],
     });
     expect(strangerCreate.status).toBe(404);
 
@@ -290,7 +291,7 @@ describe("Bookmarks privacy (e2e)", () => {
     const granteeCreate = await userB.post("/bookmarks").send({
       url: "https://example.com/y",
       title: "Also nope",
-      collectionId: collection.body.id,
+      collectionIds: [collection.body.id],
     });
     expect(granteeCreate.status).toBe(403);
   });

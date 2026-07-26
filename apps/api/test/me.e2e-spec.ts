@@ -49,6 +49,7 @@ describe("GET /me (e2e)", () => {
 
   afterEach(async () => {
     fetchEmailMock.mockReset();
+    await prisma.bookmarkCollection.deleteMany();
     await prisma.collectionShare.deleteMany();
     await prisma.bookmark.deleteMany();
     await prisma.collection.deleteMany();

@@ -44,6 +44,7 @@ describe("Collections privacy (e2e)", () => {
   });
 
   afterEach(async () => {
+    await prisma.bookmarkCollection.deleteMany();
     await prisma.collectionShare.deleteMany();
     await prisma.bookmark.deleteMany();
     await prisma.collection.deleteMany();
@@ -145,7 +146,7 @@ describe("Collections privacy (e2e)", () => {
     );
   });
 
-  it("DELETE collection nulls bookmark.collectionId and removes shares", async () => {
+  it("DELETE collection keeps bookmarks and removes memberships and shares", async () => {
     const userA = await authRequest(
       "auth0|col-del-a",
       "col-del-a@example.com",
@@ -155,7 +156,6 @@ describe("Collections privacy (e2e)", () => {
       "col-del-b@example.com",
     );
 
-    const meA = await userA.get("/me").expect(200);
     const meB = await userB.get("/me").expect(200);
 
     const created = await userA
@@ -163,14 +163,14 @@ describe("Collections privacy (e2e)", () => {
       .send({ name: "To delete" })
       .expect(201);
 
-    const bookmark = await prisma.bookmark.create({
-      data: {
+    const bookmark = await userA
+      .post("/bookmarks")
+      .send({
         url: "https://example.com",
         title: "Keep me",
-        ownerId: meA.body.id,
-        collectionId: created.body.id,
-      },
-    });
+        collectionIds: [created.body.id],
+      })
+      .expect(201);
 
     await prisma.collectionShare.create({
       data: {
@@ -182,9 +182,14 @@ describe("Collections privacy (e2e)", () => {
     await userA.delete(`/collections/${created.body.id}`).expect(200);
 
     const updatedBookmark = await prisma.bookmark.findUnique({
-      where: { id: bookmark.id },
+      where: { id: bookmark.body.id },
     });
-    expect(updatedBookmark?.collectionId).toBeNull();
+    expect(updatedBookmark).not.toBeNull();
+
+    const memberships = await prisma.bookmarkCollection.findMany({
+      where: { collectionId: created.body.id },
+    });
+    expect(memberships).toHaveLength(0);
 
     const shares = await prisma.collectionShare.findMany({
       where: { collectionId: created.body.id },

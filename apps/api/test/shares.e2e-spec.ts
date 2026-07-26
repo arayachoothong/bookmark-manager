@@ -44,6 +44,7 @@ describe("Collection shares (e2e)", () => {
   });
 
   afterEach(async () => {
+    await prisma.bookmarkCollection.deleteMany();
     await prisma.collectionShare.deleteMany();
     await prisma.bookmark.deleteMany();
     await prisma.collection.deleteMany();
