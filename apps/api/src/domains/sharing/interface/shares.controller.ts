@@ -8,17 +8,29 @@ import {
   Param,
   Post,
 } from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from "@nestjs/swagger";
 import type { User } from "@prisma/client";
 import { CurrentUser } from "../../auth/interface/current-user.decorator";
+import { ShareResponse } from "../../../shared/openapi/api-models";
 import { SharesService } from "../application/shares.service";
-import type { CreateShareDto } from "./dto/create-share.dto";
+import { CreateShareDto } from "./dto/create-share.dto";
 
+@ApiTags("shares")
+@ApiBearerAuth("access-token")
 @Controller("collections/:collectionId/shares")
 export class SharesController {
   constructor(private readonly sharesService: SharesService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Share a collection read-only by email" })
+  @ApiCreatedResponse({ type: ShareResponse })
   create(
     @CurrentUser() user: User,
     @Param("collectionId") collectionId: string,
@@ -28,6 +40,8 @@ export class SharesController {
   }
 
   @Get()
+  @ApiOperation({ summary: "List shares on a collection (owner only)" })
+  @ApiOkResponse({ type: ShareResponse, isArray: true })
   list(
     @CurrentUser() user: User,
     @Param("collectionId") collectionId: string,
@@ -36,6 +50,7 @@ export class SharesController {
   }
 
   @Delete(":granteeUserId")
+  @ApiOperation({ summary: "Revoke a share" })
   async revoke(
     @CurrentUser() user: User,
     @Param("collectionId") collectionId: string,

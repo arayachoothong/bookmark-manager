@@ -1,3 +1,6 @@
-export type CreateCollectionDto = {
-  name: string;
-};
+import { ApiProperty } from "@nestjs/swagger";
+
+export class CreateCollectionDto {
+  @ApiProperty()
+  name!: string;
+}

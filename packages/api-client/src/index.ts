@@ -1,2 +1,10 @@
-/** OpenAPI-generated client — populated via `pnpm codegen:api`. */
-export const API_CLIENT_PLACEHOLDER = true;
+export {
+  setAuthTokenProvider,
+  customInstance,
+  AXIOS_INSTANCE,
+} from "./custom-instance";
+export * from "./generated/bookmarks/bookmarks";
+export * from "./generated/collections/collections";
+export * from "./generated/shares/shares";
+export * from "./generated/users/users";
+export * from "./generated/models";
