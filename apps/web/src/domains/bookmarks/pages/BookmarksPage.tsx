@@ -79,6 +79,14 @@ export function BookmarksPage() {
   }
 
   const collections = collectionsQuery.data ?? [];
+  const currentUserId = meQuery.data?.id;
+  const defaultCreateCollectionId =
+    currentUserId &&
+    filterCollectionId &&
+    collections.find((collection) => collection.id === filterCollectionId)
+      ?.ownerId === currentUserId
+      ? filterCollectionId
+      : undefined;
 
   return (
     <Stack className="mx-auto max-w-3xl gap-6 p-6">
@@ -112,7 +120,8 @@ export function BookmarksPage() {
 
       <CreateBookmarkForm
         collections={collections}
-        defaultCollectionId={filterCollectionId}
+        currentUserId={currentUserId}
+        defaultCollectionId={defaultCreateCollectionId}
       />
 
       {bookmarksQuery.isLoading ? (

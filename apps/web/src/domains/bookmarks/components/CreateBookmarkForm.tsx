@@ -31,13 +31,18 @@ function createErrorMessage(error: unknown): string {
 
 type CreateBookmarkFormProps = {
   collections: CollectionResponse[];
+  currentUserId?: string;
   defaultCollectionId?: string;
 };
 
 export function CreateBookmarkForm({
   collections,
+  currentUserId,
   defaultCollectionId,
 }: CreateBookmarkFormProps) {
+  const assignableCollections = currentUserId
+    ? collections.filter((collection) => collection.ownerId === currentUserId)
+    : [];
   const queryClient = useQueryClient();
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -132,7 +137,7 @@ export function CreateBookmarkForm({
             disabled={createMutation.isPending}
           >
             <MenuItem value="">None</MenuItem>
-            {collections.map((collection) => (
+            {assignableCollections.map((collection) => (
               <MenuItem key={collection.id} value={collection.id}>
                 {collection.name}
               </MenuItem>
