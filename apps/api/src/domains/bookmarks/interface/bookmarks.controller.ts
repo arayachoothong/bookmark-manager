@@ -34,6 +34,7 @@ export class BookmarksController {
   @Get()
   @ApiOperation({ summary: "List bookmarks readable by the caller" })
   @ApiQuery({ name: "collectionId", required: false })
+  @ApiQuery({ name: "q", required: false })
   @ApiOkResponse({ type: BookmarkResponse, isArray: true })
   list(@CurrentUser() user: User, @Query() query: QueryBookmarksDto) {
     return this.bookmarksService.listForUser(user, query);

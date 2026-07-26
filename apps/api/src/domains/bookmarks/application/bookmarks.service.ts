@@ -2,27 +2,35 @@ import {
   BadRequestException,
   Injectable,
 } from "@nestjs/common";
-import type { Bookmark, User } from "@prisma/client";
+import type { User } from "@prisma/client";
 import { CollectionAccessService } from "../../collections/domain/collection-access.service";
 import { ForbiddenError } from "../../../shared/errors/forbidden.error";
 import { NotFoundError } from "../../../shared/errors/not-found.error";
-import { BookmarksRepository } from "../infrastructure/bookmarks.repository";
+import {
+  BookmarksRepository,
+  type BookmarkWithCollections,
+} from "../infrastructure/bookmarks.repository";
 import type { CreateBookmarkDto } from "../interface/dto/create-bookmark.dto";
 import type { PatchBookmarkDto } from "../interface/dto/patch-bookmark.dto";
 import type { QueryBookmarksDto } from "../interface/dto/query-bookmarks.dto";
 import type { UpdateBookmarkDto } from "../interface/dto/update-bookmark.dto";
 
-function toBookmarkResponse(bookmark: Bookmark) {
+function toBookmarkResponse(bookmark: BookmarkWithCollections) {
   return {
     id: bookmark.id,
     url: bookmark.url,
     title: bookmark.title,
     notes: bookmark.notes,
-    collectionId: bookmark.collectionId,
+    collectionIds: bookmark.collections.map((row) => row.collectionId),
     ownerId: bookmark.ownerId,
     createdAt: bookmark.createdAt,
     updatedAt: bookmark.updatedAt,
   };
+}
+
+function normalizeOptionalQuery(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 function assertNonEmptyString(value: unknown, field: string): string {
@@ -40,20 +48,19 @@ export class BookmarksService {
   ) {}
 
   async listForUser(user: User, query: QueryBookmarksDto) {
-    if (query.collectionId !== undefined) {
+    const collectionId = normalizeOptionalQuery(query.collectionId);
+    const q = normalizeOptionalQuery(query.q);
+
+    if (collectionId !== undefined) {
       await this.collectionAccessService.getReadableOrThrow(
         user.id,
-        query.collectionId,
+        collectionId,
       );
-      const bookmarks = await this.bookmarksRepository.listReadableForUser(
-        user.id,
-        query.collectionId,
-      );
-      return bookmarks.map(toBookmarkResponse);
     }
 
     const bookmarks = await this.bookmarksRepository.listReadableForUser(
       user.id,
+      { collectionId, q },
     );
     return bookmarks.map(toBookmarkResponse);
   }
@@ -67,20 +74,27 @@ export class BookmarksService {
     const url = assertNonEmptyString(dto.url, "url");
     const title = assertNonEmptyString(dto.title, "title");
 
-    if (dto.collectionId !== undefined) {
+    for (const collectionId of dto.collectionIds ?? []) {
       await this.collectionAccessService.getWritableOrThrow(
         user.id,
-        dto.collectionId,
+        collectionId,
       );
     }
+    const collectionIds = [...new Set(dto.collectionIds ?? [])];
 
     const bookmark = await this.bookmarksRepository.create({
       url,
       title,
       notes: dto.notes ?? null,
       owner: { connect: { id: user.id } },
-      ...(dto.collectionId !== undefined
-        ? { collection: { connect: { id: dto.collectionId } } }
+      ...(collectionIds.length > 0
+        ? {
+            collections: {
+              create: collectionIds.map((collectionId) => ({
+                collection: { connect: { id: collectionId } },
+              })),
+            },
+          }
         : {}),
     });
 
@@ -92,24 +106,21 @@ export class BookmarksService {
     const url = assertNonEmptyString(dto.url, "url");
     const title = assertNonEmptyString(dto.title, "title");
 
-    if (dto.collectionId !== undefined && dto.collectionId !== null) {
-      await this.collectionAccessService.getWritableOrThrow(
-        user.id,
-        dto.collectionId,
-      );
+    if (dto.collectionIds !== undefined) {
+      await this.assertCollectionsWritable(user.id, dto.collectionIds);
     }
 
-    const bookmark = await this.bookmarksRepository.update(id, {
+    let bookmark = await this.bookmarksRepository.update(id, {
       url,
       title,
       notes: dto.notes ?? null,
-      collection:
-        dto.collectionId === undefined
-          ? undefined
-          : dto.collectionId === null
-            ? { disconnect: true }
-            : { connect: { id: dto.collectionId } },
     });
+    if (dto.collectionIds !== undefined) {
+      bookmark = await this.bookmarksRepository.setCollectionIds(
+        id,
+        dto.collectionIds,
+      );
+    }
 
     return toBookmarkResponse(bookmark);
   }
@@ -117,11 +128,8 @@ export class BookmarksService {
   async patch(user: User, id: string, dto: PatchBookmarkDto) {
     await this.assertCanMutateBookmark(user.id, id);
 
-    if (dto.collectionId !== undefined && dto.collectionId !== null) {
-      await this.collectionAccessService.getWritableOrThrow(
-        user.id,
-        dto.collectionId,
-      );
+    if (dto.collectionIds !== undefined) {
+      await this.assertCollectionsWritable(user.id, dto.collectionIds);
     }
 
     const data: Parameters<BookmarksRepository["update"]>[1] = {};
@@ -134,14 +142,13 @@ export class BookmarksService {
     if (dto.notes !== undefined) {
       data.notes = dto.notes;
     }
-    if (dto.collectionId !== undefined) {
-      data.collection =
-        dto.collectionId === null
-          ? { disconnect: true }
-          : { connect: { id: dto.collectionId } };
+    let bookmark = await this.bookmarksRepository.update(id, data);
+    if (dto.collectionIds !== undefined) {
+      bookmark = await this.bookmarksRepository.setCollectionIds(
+        id,
+        dto.collectionIds,
+      );
     }
-
-    const bookmark = await this.bookmarksRepository.update(id, data);
     return toBookmarkResponse(bookmark);
   }
 
@@ -150,10 +157,44 @@ export class BookmarksService {
     await this.bookmarksRepository.delete(id);
   }
 
+  async addToCollection(
+    user: User,
+    collectionId: string,
+    bookmarkIds: string[],
+  ) {
+    await this.collectionAccessService.getWritableOrThrow(
+      user.id,
+      collectionId,
+    );
+    for (const bookmarkId of bookmarkIds) {
+      await this.assertCanMutateBookmark(user.id, bookmarkId);
+    }
+    return this.bookmarksRepository.addCollectionLinks(
+      bookmarkIds,
+      collectionId,
+    );
+  }
+
+  async removeFromCollection(
+    user: User,
+    collectionId: string,
+    bookmarkId: string,
+  ) {
+    await this.collectionAccessService.getWritableOrThrow(
+      user.id,
+      collectionId,
+    );
+    await this.assertCanMutateBookmark(user.id, bookmarkId);
+    return this.bookmarksRepository.removeCollectionLink(
+      bookmarkId,
+      collectionId,
+    );
+  }
+
   private async assertCanReadBookmark(
     userId: string,
     bookmarkId: string,
-  ): Promise<Bookmark> {
+  ): Promise<BookmarkWithCollections> {
     const bookmark = await this.bookmarksRepository.findById(bookmarkId);
     if (!bookmark) {
       throw new NotFoundError("Bookmark not found");
@@ -161,11 +202,7 @@ export class BookmarksService {
     if (bookmark.ownerId === userId) {
       return bookmark;
     }
-    if (bookmark.collectionId) {
-      await this.collectionAccessService.getReadableOrThrow(
-        userId,
-        bookmark.collectionId,
-      );
+    if (await this.userCanReadBookmark(userId, bookmark)) {
       return bookmark;
     }
     throw new NotFoundError("Bookmark not found");
@@ -174,7 +211,7 @@ export class BookmarksService {
   private async assertCanMutateBookmark(
     userId: string,
     bookmarkId: string,
-  ): Promise<Bookmark> {
+  ): Promise<BookmarkWithCollections> {
     const bookmark = await this.bookmarksRepository.findById(bookmarkId);
     if (!bookmark) {
       throw new NotFoundError("Bookmark not found");
@@ -190,25 +227,36 @@ export class BookmarksService {
 
   private async userCanReadBookmark(
     userId: string,
-    bookmark: Bookmark,
+    bookmark: BookmarkWithCollections,
   ): Promise<boolean> {
     if (bookmark.ownerId === userId) {
       return true;
     }
-    if (!bookmark.collectionId) {
-      return false;
-    }
-    try {
-      await this.collectionAccessService.getReadableOrThrow(
-        userId,
-        bookmark.collectionId,
-      );
-      return true;
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return false;
+    for (const { collectionId } of bookmark.collections) {
+      try {
+        await this.collectionAccessService.getReadableOrThrow(
+          userId,
+          collectionId,
+        );
+        return true;
+      } catch (error) {
+        if (!(error instanceof NotFoundError)) {
+          throw error;
+        }
       }
-      throw error;
+    }
+    return false;
+  }
+
+  private async assertCollectionsWritable(
+    userId: string,
+    collectionIds: string[],
+  ): Promise<void> {
+    for (const collectionId of collectionIds) {
+      await this.collectionAccessService.getWritableOrThrow(
+        userId,
+        collectionId,
+      );
     }
   }
 }

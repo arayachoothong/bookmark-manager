@@ -104,6 +104,19 @@ export class BookmarksRepository {
     });
   }
 
+  addCollectionLinks(bookmarkIds: string[], collectionId: string) {
+    return this.prisma.bookmarkCollection.createMany({
+      data: bookmarkIds.map((bookmarkId) => ({ bookmarkId, collectionId })),
+      skipDuplicates: true,
+    });
+  }
+
+  removeCollectionLink(bookmarkId: string, collectionId: string) {
+    return this.prisma.bookmarkCollection.deleteMany({
+      where: { bookmarkId, collectionId },
+    });
+  }
+
   delete(id: string): Promise<Bookmark> {
     return this.prisma.bookmark.delete({ where: { id } });
   }
