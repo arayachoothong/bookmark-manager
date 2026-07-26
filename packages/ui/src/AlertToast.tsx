@@ -16,9 +16,19 @@ export function AlertToast({ open, severity, message, onClose }: AlertToastProps
       open={open}
       autoHideDuration={4000}
       onClose={onClose}
-      anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      anchorOrigin={{ vertical: "top", horizontal: "right" }}
     >
-      <MuiAlert severity={severity} variant="filled" onClose={onClose}>
+      <MuiAlert
+        severity={severity}
+        variant="outlined"
+        onClose={onClose}
+        sx={{
+          bgcolor: "background.paper",
+          borderLeftWidth: 4,
+          boxShadow: 2,
+          alignItems: "center",
+        }}
+      >
         {message}
       </MuiAlert>
     </Snackbar>
