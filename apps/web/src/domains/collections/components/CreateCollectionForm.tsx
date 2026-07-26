@@ -2,6 +2,7 @@ import { useCollectionsControllerCreate } from "@bookmark-manager/api-client";
 import { Button, TextField } from "@bookmark-manager/ui";
 import { useState, type FormEvent } from "react";
 
+import { features } from "../../../config/features.config";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 type ApiErrorBody = { message?: string };
@@ -23,6 +24,10 @@ function createErrorMessage(error: unknown): string {
 }
 
 export function CreateCollectionForm() {
+  if (!features.createCollection) {
+    return null;
+  }
+
   const [name, setName] = useState("");
   const { invalidateCollectionsList } = useCollectionsQuery();
 

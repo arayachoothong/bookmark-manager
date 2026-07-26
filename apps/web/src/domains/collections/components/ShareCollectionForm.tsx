@@ -3,6 +3,7 @@ import { Button, Stack, TextField } from "@bookmark-manager/ui";
 import Typography from "@mui/material/Typography";
 import { useState, type FormEvent } from "react";
 
+import { features } from "../../../config/features.config";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 type ShareCollectionFormProps = {
@@ -32,6 +33,10 @@ function shareErrorMessage(error: unknown): string {
 }
 
 export function ShareCollectionForm({ collectionId }: ShareCollectionFormProps) {
+  if (!features.shareCollection) {
+    return null;
+  }
+
   const [email, setEmail] = useState("");
   const { invalidateShares } = useCollectionsQuery();
 

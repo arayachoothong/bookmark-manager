@@ -9,6 +9,8 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import { useQueryClient } from "@tanstack/react-query";
+
+import { features } from "../../../config/features.config";
 import { useEffect, useState, type FormEvent } from "react";
 
 type ApiErrorBody = { message?: string };
@@ -40,6 +42,10 @@ export function CreateBookmarkForm({
   currentUserId,
   defaultCollectionId,
 }: CreateBookmarkFormProps) {
+  if (!features.createBookmark) {
+    return null;
+  }
+
   const assignableCollections = currentUserId
     ? collections.filter((collection) => collection.ownerId === currentUserId)
     : [];
