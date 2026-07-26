@@ -52,7 +52,10 @@ export class AccessTokenGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    request.user = await this.usersService.findOrCreateFromClaims(claims);
+    request.user = await this.usersService.findOrCreateFromClaims(
+      claims,
+      token,
+    );
     return true;
   }
 }

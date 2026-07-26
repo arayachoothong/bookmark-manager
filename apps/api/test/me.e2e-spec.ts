@@ -8,6 +8,8 @@ import {
   type JwtVerifierFn,
 } from "../src/domains/auth/jwt-verifier.token";
 import { createJwtVerifier } from "../src/domains/auth/infrastructure/jwt-verifier";
+import { Auth0UserinfoClient } from "../src/domains/users/infrastructure/auth0-userinfo.client";
+import { PrismaService } from "../src/shared/prisma/prisma.service";
 import { getTestRs256KeyPair } from "./helpers/test-keys";
 import {
   signTestAccessToken,
@@ -17,6 +19,8 @@ import {
 
 describe("GET /me (e2e)", () => {
   let app: INestApplication;
+  let prisma: PrismaService;
+  const fetchEmailMock = jest.fn<Promise<string | undefined>, [string]>();
 
   beforeAll(async () => {
     process.env.AUTH0_ISSUER = TEST_AUTH0_ISSUER;
@@ -34,10 +38,46 @@ describe("GET /me (e2e)", () => {
     })
       .overrideProvider(JWT_VERIFIER)
       .useValue(verifyAccessToken)
+      .overrideProvider(Auth0UserinfoClient)
+      .useValue({ fetchEmail: fetchEmailMock })
       .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    prisma = moduleFixture.get(PrismaService);
+  });
+
+  afterEach(async () => {
+    fetchEmailMock.mockReset();
+    await prisma.collectionShare.deleteMany();
+    await prisma.bookmark.deleteMany();
+    await prisma.collection.deleteMany();
+    await prisma.user.deleteMany({
+      where: {
+        email: {
+          in: [
+            "me@example.com",
+            "persisted@example.com",
+            "seed-link@example.com",
+            "userinfo@example.com",
+          ],
+        },
+      },
+    });
+    await prisma.user.deleteMany({
+      where: {
+        auth0Sub: {
+          in: [
+            "auth0|me-1",
+            "auth0|me-no-email",
+            "auth0|seed-fake",
+            "auth0|real-login",
+            "auth0|userinfo-first",
+            "auth0|no-email-new",
+          ],
+        },
+      },
+    });
   });
 
   afterAll(async () => {
@@ -81,5 +121,51 @@ describe("GET /me (e2e)", () => {
     expect(res.status).toBe(200);
     expect(res.body.email).toBe("persisted@example.com");
     expect(res.body.auth0Sub).toBe(sub);
+  });
+
+  it("links seeded user by email when Auth0 sub differs", async () => {
+    const email = "seed-link@example.com";
+    await prisma.user.create({
+      data: { auth0Sub: "auth0|seed-fake", email },
+    });
+
+    const token = await signTestAccessToken({
+      sub: "auth0|real-login",
+      email,
+    });
+    const res = await request(app.getHttpServer())
+      .get("/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.auth0Sub).toBe("auth0|real-login");
+    expect(res.body.email).toBe(email);
+
+    const row = await prisma.user.findUnique({ where: { email } });
+    expect(row?.auth0Sub).toBe("auth0|real-login");
+  });
+
+  it("first login without email claim uses Auth0 userinfo", async () => {
+    fetchEmailMock.mockResolvedValueOnce("userinfo@example.com");
+    const token = await signTestAccessToken({ sub: "auth0|userinfo-first" });
+
+    const res = await request(app.getHttpServer())
+      .get("/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe("userinfo@example.com");
+    expect(fetchEmailMock).toHaveBeenCalledWith(token);
+  });
+
+  it("GET /me first login without email returns 401 when userinfo has no email", async () => {
+    fetchEmailMock.mockResolvedValueOnce(undefined);
+    const token = await signTestAccessToken({ sub: "auth0|no-email-new" });
+
+    const res = await request(app.getHttpServer())
+      .get("/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(401);
   });
 });

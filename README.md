@@ -46,6 +46,8 @@ pnpm dev:api    # http://localhost:4000 — Swagger at /api in dev
 pnpm dev:web    # http://localhost:3000
 ```
 
+The API enables CORS for `http://localhost:3000` (override with `CORS_ORIGIN`) so the Vite SPA can call the API with credentials during local dev.
+
 Regenerate the typed client after API contract changes:
 
 ```bash
@@ -55,6 +57,8 @@ pnpm codegen:api
 ## Auth token
 
 API Bearer credential: Auth0 **access token** bound to audience `https://bbl-candidate-test-api`. ID tokens are not accepted — they authenticate the SPA user to Auth0, not the caller to this API. See [DECISIONS.md](./DECISIONS.md).
+
+**First login / user provisioning:** Prefer an `email` custom claim on the access token (Auth0 Action on login). If the claim is missing on a brand-new user, the API falls back to Auth0 `/userinfo` with the same Bearer token (`AUTH0_ISSUER` domain). Returning users are matched by `sub` only. Seeded demo users (fake `auth0Sub` in `prisma/seed`) are linked to the real Auth0 `sub` on first login when the email matches.
 
 ## Verification
 

@@ -2,16 +2,19 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import type { User } from "@prisma/client";
 import type { JwtClaims } from "../../auth/infrastructure/jwt-verifier";
 import { PrismaService } from "../../../shared/prisma/prisma.service";
+import { Auth0UserinfoClient } from "../infrastructure/auth0-userinfo.client";
 
-/**
- * First login requires `email` on the access token (e.g. Auth0 Action on login)
- * until userinfo-based enrichment is added. Returning users are matched by `sub` only.
- */
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auth0Userinfo: Auth0UserinfoClient,
+  ) {}
 
-  async findOrCreateFromClaims(claims: JwtClaims): Promise<User> {
+  async findOrCreateFromClaims(
+    claims: JwtClaims,
+    accessToken: string,
+  ): Promise<User> {
     const existing = await this.prisma.user.findUnique({
       where: { auth0Sub: claims.sub },
     });
@@ -26,14 +29,36 @@ export class UsersService {
       return existing;
     }
 
-    if (!claims.email) {
+    let email = claims.email;
+    if (!email) {
+      email = await this.auth0Userinfo.fetchEmail(accessToken);
+    }
+
+    if (email) {
+      const byEmail = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      if (byEmail) {
+        return this.prisma.user.update({
+          where: { id: byEmail.id },
+          data: {
+            auth0Sub: claims.sub,
+            ...(claims.email && claims.email !== byEmail.email
+              ? { email: claims.email }
+              : {}),
+          },
+        });
+      }
+    }
+
+    if (!email) {
       throw new UnauthorizedException("Email claim required for first login");
     }
 
     return this.prisma.user.create({
       data: {
         auth0Sub: claims.sub,
-        email: claims.email,
+        email,
       },
     });
   }
