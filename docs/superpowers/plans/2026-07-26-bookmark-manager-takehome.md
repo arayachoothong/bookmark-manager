@@ -16,6 +16,7 @@
 - **TDD:** failing test first for features and all privacy claims; exceptions only for generated `api-client` and pure scaffolding
 - **Strict TS:** `strict: true`; no `any`; no unjustified `as`
 - **SRP:** one primary responsibility per file; compose small units
+- **DDD folders:** organise by **domain**, not layer. API: `apps/api/src/domains/<domain>/{interface,application,infrastructure,domain}` + `apps/api/src/shared/`. Web: `apps/web/src/domains/<domain>/{components,hooks,pages}` + `app/` + `lib/`. Cross-domain reuse only via `shared/`.
 - **DRY:** OpenAPI/codegen for API shapes; `@bookmark-manager/ui` for shared visuals; no hand-copied DTOs in web
 - **Auth:** API accepts **access token** only (audience `https://bbl-candidate-test-api`), JWKS **RS256 allowlist**, strict `iss`/`aud`/`exp`
 - **Privacy:** non-members get **404** (not 403) on get-by-id; share = read-only; mutations = owner only
@@ -41,25 +42,29 @@
 | `apps/api/prisma/schema.prisma` | User, Collection, Bookmark, CollectionShare |
 | `apps/api/prisma/seed.ts` | ≥2 users + sample data |
 | `apps/api/src/main.ts` | Bootstrap + Swagger |
-| `apps/api/src/auth/access-token.guard.ts` | Bearer JWT validation |
-| `apps/api/src/auth/jwt-verifier.ts` | iss/aud/exp/alg checks |
-| `apps/api/src/auth/current-user.decorator.ts` | Inject resolved User |
-| `apps/api/src/users/users.service.ts` | Upsert by `auth0Sub` |
-| `apps/api/src/users/me.controller.ts` | `GET /me` |
-| `apps/api/src/collections/**` | CRUD + nested bookmarks + shares |
-| `apps/api/src/bookmarks/**` | CRUD + filters |
-| `apps/api/src/access/collection-access.ts` | Owner/share read vs write policy |
-| `apps/api/src/common/errors/**` | Uniform error shape + filters |
+| `apps/api/src/domains/auth/infrastructure/jwt-verifier.ts` | iss/aud/exp/alg checks |
+| `apps/api/src/domains/auth/interface/access-token.guard.ts` | Bearer JWT validation |
+| `apps/api/src/domains/auth/interface/current-user.decorator.ts` | Inject resolved User |
+| `apps/api/src/domains/users/application/users.service.ts` | Upsert by `auth0Sub` |
+| `apps/api/src/domains/users/interface/me.controller.ts` | `GET /me` |
+| `apps/api/src/domains/collections/**` | interface/application/infrastructure/domain |
+| `apps/api/src/domains/collections/domain/collection-access.service.ts` | Owner/share read vs write policy |
+| `apps/api/src/domains/bookmarks/**` | CRUD + filters (layered) |
+| `apps/api/src/domains/sharing/**` | Collection shares by email (layered) |
+| `apps/api/src/shared/prisma/prisma.service.ts` | Prisma client provider |
+| `apps/api/src/shared/errors/**` | Domain errors + exception filter |
+| `apps/api/src/shared/openapi/**` | Swagger setup + export script |
 | `apps/api/test/**` | Integration tests (privacy, auth) |
 | `openapi/openapi.json` | Exported OpenAPI (codegen input) |
 | `packages/api-client/**` | Orval output (types + axios + RQ) |
 | `orval.config.ts` | Codegen config |
 | `packages/ui/src/**` | Presentational MUI+Tailwind primitives |
-| `apps/web/src/main.tsx` | Providers (Auth0, Query, Router) |
+| `apps/web/src/main.tsx` | Entry |
+| `apps/web/src/app/**` | Providers (Auth0, Query, Router) + AppRouter |
 | `apps/web/src/lib/http/configure-api-client.ts` | Axios auth interceptor wiring |
-| `apps/web/src/pages/collections/**` | Collections feature (split files) |
-| `apps/web/src/pages/bookmarks/**` | Bookmarks feature (split files) |
-| `apps/web/src/pages/callback/**` | Auth0 callback route |
+| `apps/web/src/domains/auth/**` | Auth0 wiring + callback page |
+| `apps/web/src/domains/collections/{components,hooks,pages}` | Collections feature (split files) |
+| `apps/web/src/domains/bookmarks/{components,hooks,pages}` | Bookmarks feature (split files) |
 
 ---
 
@@ -105,6 +110,7 @@ Collection delete: set bookmarks.collectionId = null; cascade-delete shares.
 ## Engineering
 - TDD for features and all security claims.
 - strict TypeScript; no any; one responsibility per file; DRY; compose small units.
+- Domain-driven folders: api `src/domains/<domain>/{interface,application,infrastructure,domain}` + `src/shared`; web `src/domains/<domain>/{components,hooks,pages}` + `app` + `lib`. Reuse across domains only via shared.
 - Fix ESLint before claiming done. No blanket eslint-disable.
 - Public docs: no employer/bank brand names.
 
@@ -436,8 +442,8 @@ EOF
 ### Task 4: JWT verifier (TDD) — RS256 + aud/iss/exp
 
 **Files:**
-- Create: `apps/api/src/auth/jwt-verifier.ts`
-- Create: `apps/api/src/auth/jwt-verifier.spec.ts`
+- Create: `apps/api/src/domains/auth/infrastructure/jwt-verifier.ts`
+- Create: `apps/api/src/domains/auth/infrastructure/jwt-verifier.spec.ts`
 - Create: `apps/api/test/helpers/test-keys.ts` (generate RS256 keypair once for tests)
 
 **Interfaces:**
@@ -448,7 +454,7 @@ EOF
 - [ ] **Step 1: Write failing tests**
 
 ```ts
-// apps/api/src/auth/jwt-verifier.spec.ts
+// apps/api/src/domains/auth/infrastructure/jwt-verifier.spec.ts
 import { generateKeyPair, exportJWK, SignJWT } from "jose";
 import { createJwtVerifier } from "./jwt-verifier";
 
@@ -533,7 +539,7 @@ Expected: FAIL (module/function missing)
 - [ ] **Step 3: Minimal implementation**
 
 ```ts
-// apps/api/src/auth/jwt-verifier.ts
+// apps/api/src/domains/auth/infrastructure/jwt-verifier.ts
 import { createLocalJWKSet, jwtVerify, errors } from "jose";
 import type { KeyLike, JWK } from "jose";
 
@@ -616,13 +622,13 @@ EOF
 ### Task 5: Auth guard + User upsert + `GET /me` (TDD)
 
 **Files:**
-- Create: `apps/api/src/auth/access-token.guard.ts`
-- Create: `apps/api/src/auth/current-user.decorator.ts`
-- Create: `apps/api/src/auth/auth.module.ts`
-- Create: `apps/api/src/users/users.service.ts`
-- Create: `apps/api/src/users/me.controller.ts`
-- Create: `apps/api/src/users/users.module.ts`
-- Create: `apps/api/src/prisma/prisma.service.ts`
+- Create: `apps/api/src/domains/auth/interface/access-token.guard.ts`
+- Create: `apps/api/src/domains/auth/interface/current-user.decorator.ts`
+- Create: `apps/api/src/domains/auth/auth.module.ts`
+- Create: `apps/api/src/domains/users/application/users.service.ts`
+- Create: `apps/api/src/domains/users/interface/me.controller.ts`
+- Create: `apps/api/src/domains/users/users.module.ts`
+- Create: `apps/api/src/shared/prisma/prisma.service.ts`
 - Create: `apps/api/test/me.e2e-spec.ts` (or integration)
 
 **Interfaces:**
@@ -675,14 +681,16 @@ EOF
 ### Task 6: Collection access policy + collections CRUD (TDD)
 
 **Files:**
-- Create: `apps/api/src/access/collection-access.service.ts`
-- Create: `apps/api/src/access/collection-access.service.spec.ts`
-- Create: `apps/api/src/collections/dto/create-collection.dto.ts`
-- Create: `apps/api/src/collections/dto/update-collection.dto.ts`
-- Create: `apps/api/src/collections/dto/patch-collection.dto.ts`
-- Create: `apps/api/src/collections/collections.service.ts`
-- Create: `apps/api/src/collections/collections.controller.ts`
-- Create: `apps/api/src/collections/collections.module.ts`
+- Create: `apps/api/src/domains/collections/domain/collection-access.service.ts`
+- Create: `apps/api/src/domains/collections/domain/collection-access.service.spec.ts`
+- Create: `apps/api/src/domains/collections/domain/collection.errors.ts`
+- Create: `apps/api/src/domains/collections/interface/dto/create-collection.dto.ts`
+- Create: `apps/api/src/domains/collections/interface/dto/update-collection.dto.ts`
+- Create: `apps/api/src/domains/collections/interface/dto/patch-collection.dto.ts`
+- Create: `apps/api/src/domains/collections/application/collections.service.ts`
+- Create: `apps/api/src/domains/collections/infrastructure/collections.repository.ts`
+- Create: `apps/api/src/domains/collections/interface/collections.controller.ts`
+- Create: `apps/api/src/domains/collections/collections.module.ts`
 - Create: `apps/api/test/collections.privacy.e2e-spec.ts`
 
 **Interfaces:**
@@ -754,10 +762,11 @@ EOF
 ### Task 7: Bookmarks CRUD + filters (TDD)
 
 **Files:**
-- Create: `apps/api/src/bookmarks/dto/*.ts` (create/update/patch/query)
-- Create: `apps/api/src/bookmarks/bookmarks.service.ts`
-- Create: `apps/api/src/bookmarks/bookmarks.controller.ts`
-- Create: `apps/api/src/bookmarks/bookmarks.module.ts`
+- Create: `apps/api/src/domains/bookmarks/interface/dto/*.ts` (create/update/patch/query)
+- Create: `apps/api/src/domains/bookmarks/application/bookmarks.service.ts`
+- Create: `apps/api/src/domains/bookmarks/infrastructure/bookmarks.repository.ts`
+- Create: `apps/api/src/domains/bookmarks/interface/bookmarks.controller.ts`
+- Create: `apps/api/src/domains/bookmarks/bookmarks.module.ts`
 - Create: `apps/api/test/bookmarks.privacy.e2e-spec.ts`
 
 **Interfaces:**
@@ -787,9 +796,11 @@ EOF
 ### Task 8: Collection shares by email (TDD)
 
 **Files:**
-- Create: `apps/api/src/collections/dto/create-share.dto.ts` (`email: string`)
-- Create: `apps/api/src/collections/shares.service.ts`
-- Create: `apps/api/src/collections/shares.controller.ts` (or nested routes on collections controller — prefer **separate** `shares.controller.ts` mounted at `collections/:id/shares` for SRP)
+- Create: `apps/api/src/domains/sharing/interface/dto/create-share.dto.ts` (`email: string`)
+- Create: `apps/api/src/domains/sharing/application/shares.service.ts`
+- Create: `apps/api/src/domains/sharing/infrastructure/shares.repository.ts`
+- Create: `apps/api/src/domains/sharing/interface/shares.controller.ts` (mounted at `collections/:id/shares`; separate from collections controller for SRP)
+- Create: `apps/api/src/domains/sharing/sharing.module.ts`
 - Create: `apps/api/test/shares.e2e-spec.ts`
 
 **Interfaces:**
@@ -820,8 +831,9 @@ EOF
 ### Task 9: Swagger + OpenAPI export + Orval `api-client`
 
 **Files:**
-- Modify: `apps/api/src/main.ts` — SwaggerModule setup, Bearer auth
-- Create: `apps/api/src/scripts/export-openapi.ts` (or nest script)
+- Create: `apps/api/src/shared/openapi/swagger.config.ts` — SwaggerModule setup, Bearer auth
+- Modify: `apps/api/src/main.ts` — apply swagger config
+- Create: `apps/api/src/shared/openapi/export-openapi.ts` — one-shot export script
 - Create: `openapi/openapi.json` (generated, committed)
 - Create: `orval.config.ts`
 - Modify: `packages/api-client/**` generated output
@@ -926,7 +938,8 @@ EOF
 - Create: `apps/web/src/app/AppRouter.tsx`
 - Create: `apps/web/src/app/providers/AppProviders.tsx`
 - Create: `apps/web/src/lib/http/configure-api-client.ts`
-- Create: `apps/web/src/pages/callback/CallbackPage.tsx`
+- Create: `apps/web/src/domains/auth/pages/CallbackPage.tsx`
+- Create: `apps/web/src/domains/auth/hooks/useAuthToken.ts`
 - Create: `apps/web/.env.example`
 - Modify: Tailwind + MUI theme setup (`src/styles.css`)
 
@@ -970,12 +983,12 @@ EOF
 ### Task 12: Collections pages (list/create/delete/detail + share)
 
 **Files (split — one responsibility each):**
-- `apps/web/src/pages/collections/CollectionsPage.tsx` — route wiring
-- `apps/web/src/pages/collections/CollectionsList.tsx` — presentational list
-- `apps/web/src/pages/collections/CreateCollectionForm.tsx`
-- `apps/web/src/pages/collections/CollectionDetailPage.tsx`
-- `apps/web/src/pages/collections/ShareCollectionForm.tsx`
-- `apps/web/src/pages/collections/useCollectionsQuery.ts` — thin wrapper if Orval hooks need cache invalidation helpers
+- `apps/web/src/domains/collections/pages/CollectionsPage.tsx` — route wiring
+- `apps/web/src/domains/collections/pages/CollectionDetailPage.tsx`
+- `apps/web/src/domains/collections/components/CollectionsList.tsx` — presentational list
+- `apps/web/src/domains/collections/components/CreateCollectionForm.tsx`
+- `apps/web/src/domains/collections/components/ShareCollectionForm.tsx`
+- `apps/web/src/domains/collections/hooks/useCollectionsQuery.ts` — thin wrapper if Orval hooks need cache invalidation helpers
 - Prefer Orval-generated hooks directly when possible
 
 - [ ] **Step 1: Build UI against generated hooks** (`useGetCollections`, `usePostCollections`, etc. — exact names from Orval output)
@@ -1000,11 +1013,11 @@ EOF
 ### Task 13: Bookmarks pages (list/detail/create/delete/filter)
 
 **Files:**
-- `apps/web/src/pages/bookmarks/BookmarksPage.tsx`
-- `apps/web/src/pages/bookmarks/BookmarksList.tsx`
-- `apps/web/src/pages/bookmarks/BookmarkDetailPage.tsx`
-- `apps/web/src/pages/bookmarks/CreateBookmarkForm.tsx`
-- `apps/web/src/pages/bookmarks/CollectionFilter.tsx`
+- `apps/web/src/domains/bookmarks/pages/BookmarksPage.tsx`
+- `apps/web/src/domains/bookmarks/pages/BookmarkDetailPage.tsx`
+- `apps/web/src/domains/bookmarks/components/BookmarksList.tsx`
+- `apps/web/src/domains/bookmarks/components/CreateBookmarkForm.tsx`
+- `apps/web/src/domains/bookmarks/components/CollectionFilter.tsx`
 
 - [ ] **Step 1: Implement with generated hooks + collection filter query param**
 

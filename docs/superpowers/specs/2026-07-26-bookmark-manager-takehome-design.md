@@ -82,6 +82,48 @@ bookmark-manager/
 - Workspace tool: **pnpm** workspaces (Turbo optional for scripts).
 - Graders’ expected top-level names (`backend` / `frontend`) may be mapped in README as `apps/api` and `apps/web`; do not invent a second copy of the apps.
 
+### 3.0 Domain-driven folder convention
+
+Both apps organise code by **domain**, not by technical layer. Each domain is a self-contained module; cross-domain reuse lives in `shared/`.
+
+**API (`apps/api/src`):** one NestJS module per domain, with layered subfolders inside each domain (SRP per file):
+
+```
+apps/api/src/
+  domains/
+    auth/          interface/ application/ infrastructure/  (guard, verifier, current-user)
+    users/         interface/ application/ infrastructure/  (/me, upsert-from-claims)
+    collections/   interface/ application/ infrastructure/ domain/  (controller, service, repo, access policy, errors)
+    bookmarks/     interface/ application/ infrastructure/
+    sharing/       interface/ application/ infrastructure/  (collection shares by email)
+  shared/
+    prisma/        prisma.service.ts
+    errors/        domain-error.ts + exception filter (NotFound→404, Forbidden→403)
+    openapi/       swagger setup + export script
+  main.ts
+```
+
+- `interface/` = controllers + DTOs (HTTP edge, Swagger annotations)
+- `application/` = services / use-cases (no HTTP, no direct Prisma types leaking out)
+- `infrastructure/` = Prisma-backed repositories
+- `domain/` = entities, policies (e.g. collection access), domain errors
+- The collection access policy is the shared invariant; it lives in `collections/domain` and is consumed by `bookmarks` and `sharing`.
+
+**Web (`apps/web/src`):** domain folders mirror the API domains:
+
+```
+apps/web/src/
+  domains/
+    auth/        (Auth0 wiring, callback page, token getter)
+    collections/ components/ hooks/ pages/
+    bookmarks/   components/ hooks/ pages/
+  app/           providers, router
+  lib/           http (api-client configuration), theme
+```
+
+- Prefer generated hooks from `@bookmark-manager/api-client`; domain `hooks/` only add UI-specific cache keys/invalidation.
+- No employer branding; one responsibility per file.
+
 ### 3.1 OpenAPI + codegen (shared contract)
 
 **Source of truth:** NestJS controllers/DTOs annotated with `@nestjs/swagger`. The running API exposes Swagger UI (dev) and an OpenAPI JSON document (e.g. `/api-json` or a committed `openapi.json` exported in CI/scripts).
