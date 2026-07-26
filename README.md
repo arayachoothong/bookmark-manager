@@ -13,7 +13,7 @@ Private read-later bookmark manager (take-home). Monorepo with NestJS API, React
 
 ## Prerequisites
 
-- Node 20+
+- Node 22+
 - [pnpm](https://pnpm.io/) 9+
 - Docker + Docker Compose (Postgres, optional full API/web stack)
 
@@ -36,11 +36,11 @@ Web Auth0 PKCE variables are in `apps/web/.env.example`. Do not commit real secr
 pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
-pnpm dev          # Postgres + migrate + API (:4000) + web (:3000)
+pnpm dev          # Postgres + Prisma generate/migrate + API (:4000) + web (:3000)
 # or: pnpm dev:seed   # same as dev, plus prisma seed before apps
 ```
 
-`pnpm dev` starts Docker Postgres if needed, waits until it accepts connections, runs `prisma migrate deploy`, then runs Nest and Vite together (logs prefixed `api` / `web`). Ctrl+C stops the apps; Postgres stays up — use `pnpm db:down` to stop it.
+`pnpm dev` starts Docker Postgres if needed, waits until it accepts connections, generates the Prisma client, runs `prisma migrate deploy`, then runs Nest and Vite together (logs prefixed `api` / `web`). Ctrl+C stops the apps; Postgres stays up — use `pnpm db:down` to stop it.
 
 For a single process only:
 

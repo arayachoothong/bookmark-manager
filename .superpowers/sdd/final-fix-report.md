@@ -21,3 +21,49 @@
 - Seeded fake sub + email → login with real sub, same email → 200, `auth0Sub` updated
 - First login without email claim → userinfo mock supplies email
 - First login without email and empty userinfo → 401
+
+---
+
+# Final review fixes (`pnpm dev`)
+
+**Branch:** `feat/pnpm-dev`
+**Date:** 2026-07-26
+
+## Fixes
+
+- Added `prisma generate` before `prisma migrate deploy` in `dev:prep`.
+- Updated the README prerequisite from Node 20+ to Node 22+.
+- Documented Prisma client generation in the local development flow.
+
+## Verification
+
+### `node -e "console.log(require('./package.json').scripts['dev:prep'])"`
+
+```text
+pnpm db:up && ./scripts/wait-for-postgres.sh && pnpm --filter @bookmark-manager/api exec prisma generate && pnpm --filter @bookmark-manager/api exec prisma migrate deploy
+```
+
+Exit code: 0
+
+### `rg -n 'Node ' README.md`
+
+```text
+16:- Node 22+
+```
+
+Exit code: 0
+
+### `pnpm --filter @bookmark-manager/api exec prisma generate`
+
+```text
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7.
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+✔ Generated Prisma Client (v6.19.3)
+```
+
+Exit code: 0
+
+### IDE diagnostics
+
+No linter errors in `package.json` or `README.md`.
