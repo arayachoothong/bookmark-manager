@@ -16,13 +16,33 @@
 
 **Status:** Accepted
 
-**Context:** The SPA obtains tokens from Auth0; the API must authenticate machine callers, not just prove a browser session.
+**Context:** The SPA obtains tokens from Auth0; the API must authenticate API callers, not only prove a browser session to Auth0. The assignment deliberately leaves the Bearer choice open.
 
-**Decision:** Require `Authorization: Bearer <access_token>` with audience `https://bbl-candidate-test-api`. Validate with JWKS, RS256 only, strict `iss` / `aud` / `exp`. Reject ID tokens and HS256.
+**Tenant verification (before design):** Inspected live discovery and JWKS — not assumed from Auth0 docs alone:
 
-**Consequences:** Web app uses `@auth0/auth0-react` with `authorizationParams.audience` and sends the access token via `@bookmark-manager/api-client`. First `/me` upsert may require an `email` claim on the token.
+| Source | What we looked for | What we found |
+|--------|--------------------|---------------|
+| `…/.well-known/openid-configuration` | PKCE, grants, ID-token algs, public client | `code_challenge_methods_supported`: **S256** (+ `plain`); `grant_types_supported` includes `authorization_code`, `refresh_token`, and still **`implicit`**; `token_endpoint_auth_methods_supported` includes **`none`** (SPA OK); `id_token_signing_alg_values_supported` includes **HS256**, RS256, PS256 |
+| `…/.well-known/jwks.json` | Signing keys for API JWT verification | Published keys advertise **RS256** only |
 
-**Agent steer:** Default SPA tutorials send the **ID token** as `Authorization: Bearer`. We wrote “access token + audience `https://bbl-candidate-test-api`, reject ID token/HS256” into `AGENTS.md` / `CLAUDE.md` before auth tasks and verified with JWT unit tests (wrong alg / wrong aud fail).
+**Decision:**
+
+1. SPA: **Authorization Code + PKCE (S256)** via `@auth0/auth0-react`. Do **not** use implicit (`response_type=token`), even though the tenant still advertises it.
+2. API Bearer: Auth0 **access token** with audience `https://bbl-candidate-test-api`.
+3. Validate via JWKS with strict `iss` / `aud` / `exp` and an algorithms allowlist of **RS256 only** (reject HS256 / `none`). Reject ID tokens as Bearer.
+
+**Trade-offs (on-site defense):**
+
+| Choice | Gain | Cost / risk |
+|--------|------|-------------|
+| Access token (not ID token) | `aud` binds the JWT to *this* API; Auth0 API permissions / future scopes fit here | Opaque-vs-JWT: ours is JWT so claims are inspectable; must still enforce allowlisted `alg` |
+| Reject ID token as Bearer | Avoids treating an SPA login receipt as an API credential; avoids **alg confusion** if someone verifies with discovery’s ID-token algs (HS256 listed) | Email often lives on ID token / userinfo — we may need Action custom claims or `/userinfo` for first `/me` upsert |
+| RS256-only allowlist | Matches JWKS; blocks HS256/`none` confusion attacks | Breaks if Auth0 rotated to another asym alg without updating our allowlist |
+| Auth Code + PKCE, not implicit | No access token in the URL fragment; S256 is supported by this tenant | Slightly more moving parts (code exchange); refresh tokens + `localStorage` cache in the SPA are XSS-sensitive — acceptable for this takehome, tighten in production |
+
+**Consequences:** Web requests `authorizationParams.audience` and sends the access token through `@bookmark-manager/api-client`. First `/me` upsert may require an `email` claim (or userinfo fallback). JWT unit tests cover wrong `aud` / non-RS256.
+
+**Agent steer:** Default SPA tutorials send the **ID token** as `Authorization: Bearer`. We wrote “access token + audience `https://bbl-candidate-test-api`, reject ID token/HS256” into `AGENTS.md` before auth tasks and verified with JWT unit tests.
 
 ## ADR: PostgreSQL as primary datastore
 
@@ -30,11 +50,11 @@
 
 **Context:** Relational data (users, collections, bookmarks, shares) with referential integrity.
 
-**Decision:** Postgres 16 in Docker (host port 5433), Prisma ORM, migrations + seed (≥2 users).
+**Decision:** Postgres 16 in Docker (host port 5432), Prisma ORM, migrations + seed (≥2 users).
 
 **Consequences:** API owns schema; web never imports Prisma types.
 
-**Agent steer:** Agents often default to SQLite “for the takehome.” We locked Docker Postgres 16 + host **5433** in compose/README early so seed/e2e matched the brief’s relational DB expectation.
+**Agent steer:** Agents often default to SQLite “for the takehome.” We locked Docker Postgres 16 + host **5432** in compose/README early so seed/e2e matched the brief’s relational DB expectation.
 
 ## ADR: Collection delete semantics
 

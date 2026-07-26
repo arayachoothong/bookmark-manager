@@ -26,7 +26,7 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-`apps/api/.env` includes Postgres (**5433** on the host — see `docker-compose.yml`), Auth0 JWT verification (`AUTH0_ISSUER`, `AUTH0_AUDIENCE`), optional `AUTH0_DOMAIN`, and `CORS_ORIGIN=http://localhost:3000`. `pnpm dev:api` loads `apps/api/.env` via Nest `--env-file`.
+`apps/api/.env` includes Postgres (**5432** on the host — see `docker-compose.yml`), Auth0 JWT verification (`AUTH0_ISSUER`, `AUTH0_AUDIENCE`), optional `AUTH0_DOMAIN`, and `CORS_ORIGIN=http://localhost:3000`. `pnpm dev:api` loads `apps/api/.env` via Nest `--env-file`.
 
 Web Auth0 PKCE variables are in `apps/web/.env.example`. Do not commit real secrets.
 
@@ -53,7 +53,17 @@ pnpm codegen:api
 
 ## Auth token
 
-API Bearer credential: Auth0 **access token** bound to audience `https://bbl-candidate-test-api`. ID tokens are not accepted — they authenticate the SPA user to Auth0, not the caller to this API. See [DECISIONS.md](./DECISIONS.md).
+**Choice:** API Bearer credential = Auth0 **access token** for audience `https://bbl-candidate-test-api`.  
+**Rationale:** Access tokens are audience-bound to this API; ID tokens are authentication receipts for the SPA client and are the wrong credential for authorization. Details and trade-offs: [DECISIONS.md](./DECISIONS.md).
+
+**SPA flow:** Authorization Code + **PKCE (S256)** via `@auth0/auth0-react` — no implicit flow (`response_type=token`).
+
+**Tenant verification (not assumed):** Before locking the design we fetched:
+
+- Discovery: `https://dev-yg.us.auth0.com/.well-known/openid-configuration`
+- JWKS: `https://dev-yg.us.auth0.com/.well-known/jwks.json`
+
+Observed: `code_challenge_methods_supported` includes **S256**; JWKS keys are **RS256**; discovery still lists **implicit** and ID-token algs including **HS256** — so we use Auth Code + PKCE, validate access tokens with a **RS256-only** allowlist, and never accept ID tokens as Bearer.
 
 **First login / user provisioning:** Prefer an `email` custom claim on the access token (Auth0 Action on login). If the claim is missing on a brand-new user, the API falls back to Auth0 `/userinfo` with the same Bearer token (`AUTH0_ISSUER` domain). Returning users are matched by `sub` only. Seeded demo users (fake `auth0Sub` in `prisma/seed`) are linked to the real Auth0 `sub` on first login when the email matches.
 
@@ -77,4 +87,4 @@ pnpm lint
 - [API_DESIGN.md](./API_DESIGN.md) — HTTP contract and privacy notes  
 - [DECISIONS.md](./DECISIONS.md) — ADRs  
 - [AI_WORKFLOW.md](./AI_WORKFLOW.md) — how this was built with agents  
-- [transcripts/](./transcripts/) — reconstructed session logs (messy corrections kept; secrets redacted)
+- [transcripts/](./transcripts/) — curated session indexes + Cursor UI chat exports in `transcripts/exports/` (secrets redacted; see `transcripts/README.md`)
