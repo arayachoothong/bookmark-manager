@@ -18,7 +18,7 @@ export function useBookmarkAssignment(
       onSuccess: (_data, variables) => {
         invalidateBookmarkCaches(queryClient, {
           bookmarkId,
-          collectionId: variables.data.collectionId,
+          collectionIds: variables.data.collectionIds,
         });
         options?.onSuccess?.();
       },

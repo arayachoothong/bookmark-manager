@@ -12,6 +12,7 @@ import { Link } from "react-router";
 
 import { AssignBookmarkModal } from "./AssignBookmarkModal";
 import { BookmarksList } from "./BookmarksList";
+import { BookmarksSearchField } from "./BookmarksSearchField";
 import {
   CollectionFilter,
   useBookmarkCollectionFilterParam,
@@ -20,6 +21,7 @@ import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import { features } from "../../../config/features.config";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
+import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { invalidateBookmarkCaches } from "../helpers/bookmark-query.helper";
 
@@ -30,23 +32,28 @@ export function BookmarksPanel() {
   const { showSuccess, showError } = useAlert();
   const [assignBookmarkId, setAssignBookmarkId] = useState<string | null>(null);
   const [deleteBookmarkId, setDeleteBookmarkId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
 
-  const listParams = filterCollectionId
-    ? { collectionId: filterCollectionId }
-    : undefined;
+  const listParams = {
+    ...(debouncedSearch ? { q: debouncedSearch } : {}),
+    ...(filterCollectionId ? { collectionId: filterCollectionId } : {}),
+  };
+  const listQueryParams =
+    Object.keys(listParams).length > 0 ? listParams : undefined;
 
   const meQuery = useMeControllerMe({
     query: { enabled: isApiAuthReady, queryKey: ["/me"] },
   });
 
-  const collectionsQuery = useCollectionsControllerList({
+  const collectionsQuery = useCollectionsControllerList(undefined, {
     query: { enabled: isApiAuthReady, queryKey: ["/collections"] },
   });
 
-  const bookmarksQuery = useBookmarksControllerList(listParams, {
+  const bookmarksQuery = useBookmarksControllerList(listQueryParams, {
     query: {
       enabled: isApiAuthReady,
-      queryKey: getBookmarksControllerListQueryKey(listParams),
+      queryKey: getBookmarksControllerListQueryKey(listQueryParams),
     },
   });
 
@@ -58,7 +65,7 @@ export function BookmarksPanel() {
         );
         invalidateBookmarkCaches(queryClient, {
           bookmarkId: variables.id,
-          collectionId: deleted?.collectionId,
+          collectionIds: deleted?.collectionIds,
         });
         showSuccess("Bookmark deleted.");
         setDeleteBookmarkId(null);
@@ -131,6 +138,8 @@ export function BookmarksPanel() {
         }
       />
 
+      <BookmarksSearchField value={search} onChange={setSearch} />
+
       <CollectionFilter
         collections={collectionsQuery.data ?? []}
         disabled={collectionsQuery.isError}
@@ -148,7 +157,7 @@ export function BookmarksPanel() {
 
       <AssignBookmarkModal
         bookmarkId={assignBookmarkId ?? ""}
-        currentCollectionId={assignBookmark?.collectionId}
+        currentCollectionIds={assignBookmark?.collectionIds}
         open={assignBookmarkId !== null}
         onClose={() => setAssignBookmarkId(null)}
       />

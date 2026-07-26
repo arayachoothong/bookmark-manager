@@ -10,20 +10,21 @@ import { useBookmarkAssignment } from "../hooks/useBookmarkAssignment";
 
 type AssignBookmarkModalProps = {
   bookmarkId: string;
-  currentCollectionId?: string | null;
+  currentCollectionIds?: string[];
   open: boolean;
   onClose: () => void;
 };
 
 export function AssignBookmarkModal({
   bookmarkId,
-  currentCollectionId,
+  currentCollectionIds,
   open,
   onClose,
 }: AssignBookmarkModalProps) {
   const { isApiAuthReady } = useAuthToken();
   const { showSuccess, showError } = useAlert();
-  const [collectionId, setCollectionId] = useState(currentCollectionId ?? "");
+  const currentCollectionId = currentCollectionIds?.[0] ?? "";
+  const [collectionId, setCollectionId] = useState(currentCollectionId);
 
   const meQuery = useMeControllerMe({
     query: { enabled: isApiAuthReady && open, queryKey: ["/me"] },
@@ -49,7 +50,7 @@ export function AssignBookmarkModal({
     assignment.mutate(
       {
         id: bookmarkId,
-        data: { collectionId: collectionId ? collectionId : null },
+        data: { collectionIds: collectionId ? [collectionId] : [] },
       },
       {
         onError: (error) => {
