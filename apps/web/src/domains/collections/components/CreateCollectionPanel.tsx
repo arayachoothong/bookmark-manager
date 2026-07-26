@@ -8,7 +8,7 @@ import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
-export function CreateCollectionScreen() {
+export function CreateCollectionPanel() {
   const navigate = useNavigate();
   const { showSuccess, showError } = useAlert();
   const [name, setName] = useState("");

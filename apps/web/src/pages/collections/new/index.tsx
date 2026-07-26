@@ -1,5 +1,5 @@
-import { CreateCollectionScreen } from "../../../domains/collections/components/CreateCollectionScreen";
+import { CreateCollectionPanel } from "../../../domains/collections/components/CreateCollectionPanel";
 
 export function CreateCollectionPage() {
-  return <CreateCollectionScreen />;
+  return <CreateCollectionPanel />;
 }

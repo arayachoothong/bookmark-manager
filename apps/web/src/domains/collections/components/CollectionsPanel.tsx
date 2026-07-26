@@ -14,7 +14,7 @@ import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
-export function CollectionsScreen() {
+export function CollectionsPanel() {
   const { isApiAuthReady } = useAuthToken();
   const { showSuccess, showError } = useAlert();
   const { invalidateCollectionsList } = useCollectionsQuery();

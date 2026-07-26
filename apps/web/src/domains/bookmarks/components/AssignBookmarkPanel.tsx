@@ -15,7 +15,7 @@ import { BookmarkAccessRole } from "../constants/bookmark-access.constant";
 import { bookmarkAccessRole } from "../helpers/bookmark-access.helper";
 import { useBookmarkAssignment } from "../hooks/useBookmarkAssignment";
 
-export function AssignBookmarkScreen() {
+export function AssignBookmarkPanel() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { isApiAuthReady } = useAuthToken();

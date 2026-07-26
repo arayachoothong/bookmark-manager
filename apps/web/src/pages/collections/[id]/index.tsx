@@ -1,5 +1,5 @@
-import { CollectionDetailScreen } from "../../../domains/collections/components/CollectionDetailScreen";
+import { CollectionDetailPanel } from "../../../domains/collections/components/CollectionDetailPanel";
 
 export function CollectionDetailPage() {
-  return <CollectionDetailScreen />;
+  return <CollectionDetailPanel />;
 }

@@ -20,7 +20,7 @@ import { invalidateBookmarkCaches } from "../../bookmarks/helpers/bookmark-query
 import { CollectionAccessRole } from "../constants/collection-access.constant";
 import { collectionAccessRole } from "../helpers/collection-access.helper";
 
-export function CollectionDetailScreen() {
+export function CollectionDetailPanel() {
   const { id = "" } = useParams();
   const queryClient = useQueryClient();
   const { isApiAuthReady } = useAuthToken();

@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Layout
 - Routes live under `apps/web/src/pages/<route>/` (URL-mirrored folders). Domains **never** contain `pages/`.
-- Thin pages render domain `*Screen` components under `domains/<domain>/components/`.
+- Thin pages render domain `*Panel` components under `domains/<domain>/components/`.
 - Providers stay in `src/app/providers/`. `AppRouter` reads `src/config/routes.config.tsx`.
 - Cross-cutting HTTP helpers stay in `src/lib/`.
 

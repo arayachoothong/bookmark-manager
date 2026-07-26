@@ -1,5 +1,5 @@
-import { AssignBookmarkScreen } from "../../../../domains/bookmarks/components/AssignBookmarkScreen";
+import { AssignBookmarkPanel } from "../../../../domains/bookmarks/components/AssignBookmarkPanel";
 
 export function AssignBookmarkPage() {
-  return <AssignBookmarkScreen />;
+  return <AssignBookmarkPanel />;
 }

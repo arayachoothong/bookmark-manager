@@ -1,5 +1,5 @@
-import { EditBookmarkScreen } from "../../../domains/bookmarks/components/EditBookmarkScreen";
+import { EditBookmarkPanel } from "../../../domains/bookmarks/components/EditBookmarkPanel";
 
 export function EditBookmarkPage() {
-  return <EditBookmarkScreen />;
+  return <EditBookmarkPanel />;
 }

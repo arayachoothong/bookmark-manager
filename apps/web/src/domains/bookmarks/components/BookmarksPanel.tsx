@@ -23,7 +23,7 @@ import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { invalidateBookmarkCaches } from "../helpers/bookmark-query.helper";
 
-export function BookmarksScreen() {
+export function BookmarksPanel() {
   const queryClient = useQueryClient();
   const filterCollectionId = useBookmarkCollectionFilterParam();
   const { isApiAuthReady } = useAuthToken();

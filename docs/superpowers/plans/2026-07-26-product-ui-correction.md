@@ -53,21 +53,21 @@
 | `packages/ui/src/AlertToast.tsx` | Top-right admin-style toast |
 | `apps/web/src/lib/hooks/useDebouncedValue.ts` | **Create** — debounced search value |
 | `apps/web/src/domains/collections/components/CollectionsSearchField.tsx` | **Create** — search input only |
-| `apps/web/src/domains/collections/components/CollectionsScreen.tsx` | Wire `?q=` |
+| `apps/web/src/domains/collections/components/CollectionsPanel.tsx` | Wire `?q=` |
 | `apps/web/src/domains/collections/components/CollectionNameForm.tsx` | **Create** — always-visible name + Save/Delete |
 | `apps/web/src/domains/collections/components/AddExistingBookmarksModal.tsx` | **Create** — picker + POST membership |
-| `apps/web/src/domains/collections/components/CollectionDetailScreen.tsx` | Compose name form + bookmarks + add/create/remove |
+| `apps/web/src/domains/collections/components/CollectionDetailPanel.tsx` | Compose name form + bookmarks + add/create/remove |
 | `apps/web/src/domains/bookmarks/helpers/bookmark-query.helper.ts` | Invalidate for `collectionIds: string[]` |
 | `apps/web/src/domains/bookmarks/components/BookmarksSearchField.tsx` | **Create** — title search |
-| `apps/web/src/domains/bookmarks/components/BookmarksScreen.tsx` | Wire `q` + existing `CollectionFilter` |
+| `apps/web/src/domains/bookmarks/components/BookmarksPanel.tsx` | Wire `q` + existing `CollectionFilter` |
 | `apps/web/src/domains/bookmarks/components/BookmarkForm.tsx` | **Create** — shared Title/URL/Description/Collections |
 | `apps/web/src/domains/bookmarks/components/BookmarkCollectionsField.tsx` | **Create** — multi-select collections |
-| `apps/web/src/domains/bookmarks/components/CreateBookmarkScreen.tsx` | Use `BookmarkForm` + `collectionIds` |
-| `apps/web/src/domains/bookmarks/components/EditBookmarkScreen.tsx` | Use `BookmarkForm` + delete |
+| `apps/web/src/domains/bookmarks/components/CreateBookmarkPanel.tsx` | Use `BookmarkForm` + `collectionIds` |
+| `apps/web/src/domains/bookmarks/components/EditBookmarkPanel.tsx` | Use `BookmarkForm` + delete |
 | `apps/web/src/domains/bookmarks/components/AssignBookmarkFields.tsx` | Multi-select → `collectionIds` (or replace with `BookmarkCollectionsField`) |
 | `apps/web/src/domains/bookmarks/components/AssignBookmarkModal.tsx` | Patch `collectionIds` |
 | `apps/web/src/domains/bookmarks/hooks/useBookmarkAssignment.ts` | Invalidate `collectionIds` |
-| `apps/web/src/domains/bookmarks/components/AssignBookmarkScreen.tsx` | Same `collectionIds` update |
+| `apps/web/src/domains/bookmarks/components/AssignBookmarkPanel.tsx` | Same `collectionIds` update |
 | `apps/web/src/domains/bookmarks/components/BookmarkListItem.tsx` | Show chips from `collectionIds` |
 
 ### Generated (do not hand-edit)
@@ -723,7 +723,7 @@ git commit -m "feat(web): add useDebouncedValue for search inputs"
 
 **Files:**
 - Create: `apps/web/src/domains/collections/components/CollectionsSearchField.tsx`
-- Modify: `apps/web/src/domains/collections/components/CollectionsScreen.tsx`
+- Modify: `apps/web/src/domains/collections/components/CollectionsPanel.tsx`
 
 **Interfaces:**
 - Consumes: `useDebouncedValue`; `useCollectionsControllerList` with optional `{ q }` (omit when empty)
@@ -767,7 +767,7 @@ git commit -m "feat(web): collections list server search"
 **Files:**
 - Create: `apps/web/src/domains/collections/components/CollectionNameForm.tsx`
 - Create: `apps/web/src/domains/collections/components/AddExistingBookmarksModal.tsx`
-- Modify: `apps/web/src/domains/collections/components/CollectionDetailScreen.tsx`
+- Modify: `apps/web/src/domains/collections/components/CollectionDetailPanel.tsx`
 - Modify: `apps/web/src/domains/bookmarks/helpers/bookmark-query.helper.ts`
 - Modify: bookmark list item actions as needed so collection detail can **Remove** (unassign) without deleting
 
@@ -795,7 +795,7 @@ Always-visible name + Save (PATCH) + Delete (`onDelete` opens confirm). Not show
 
 Debounced search of caller bookmarks; exclude those already in `collectionIds`; multi-select; POST `{ bookmarkIds }`; invalidate + alert + close.
 
-- [ ] **Step 4: Rebuild `CollectionDetailScreen`**
+- [ ] **Step 4: Rebuild `CollectionDetailPanel`**
 
 Owner: name form; Bookmarks section with Add existing + Create new (`/bookmarks/new?collectionId=`); row → `/bookmarks/:id`; Remove → DELETE membership.  
 Viewer: read-only name + list.  
@@ -815,7 +815,7 @@ git commit -m "feat(web): collection detail rename, add existing, unassign"
 
 **Files:**
 - Create: `apps/web/src/domains/bookmarks/components/BookmarksSearchField.tsx`
-- Modify: `apps/web/src/domains/bookmarks/components/BookmarksScreen.tsx`
+- Modify: `apps/web/src/domains/bookmarks/components/BookmarksPanel.tsx`
 - Keep: `CollectionFilter.tsx` (already omits empty `collectionId`)
 
 - [ ] **Step 1: Wire params**
@@ -849,8 +849,8 @@ git commit -m "feat(web): bookmarks list search with collection filter"
 **Files:**
 - Create: `apps/web/src/domains/bookmarks/components/BookmarkCollectionsField.tsx`
 - Create: `apps/web/src/domains/bookmarks/components/BookmarkForm.tsx`
-- Modify: `CreateBookmarkScreen.tsx`, `EditBookmarkScreen.tsx`
-- Modify: `AssignBookmarkFields.tsx` / `AssignBookmarkModal.tsx` / `AssignBookmarkScreen.tsx` / `useBookmarkAssignment.ts`
+- Modify: `CreateBookmarkPanel.tsx`, `EditBookmarkPanel.tsx`
+- Modify: `AssignBookmarkFields.tsx` / `AssignBookmarkModal.tsx` / `AssignBookmarkPanel.tsx` / `useBookmarkAssignment.ts`
 - Modify: `BookmarkListItem.tsx` for `collectionIds` chips
 
 **Interfaces:**

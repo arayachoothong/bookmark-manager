@@ -1,5 +1,5 @@
-import { BookmarksScreen } from "../../domains/bookmarks/components/BookmarksScreen";
+import { BookmarksPanel } from "../../domains/bookmarks/components/BookmarksPanel";
 
 export function BookmarksPage() {
-  return <BookmarksScreen />;
+  return <BookmarksPanel />;
 }
