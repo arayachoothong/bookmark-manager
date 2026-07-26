@@ -19,7 +19,7 @@ import type { User } from "@prisma/client";
 import { CurrentUser } from "../../auth/interface/current-user.decorator";
 import { ShareResponse } from "../../../shared/openapi/api-models";
 import { SharesService } from "../application/shares.service";
-import { CreateShareDto } from "./dto/create-share.dto";
+import type { CreateShareDto } from "./dto/create-share.dto";
 
 @ApiTags("shares")
 @ApiBearerAuth("access-token")

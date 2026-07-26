@@ -1,18 +1,44 @@
 # Architecture Decision Records
 
-Living document — ADRs are added as decisions are made during Steps 2–3.
-
-## Planned ADRs
+## Index
 
 | Topic | Status |
 |-------|--------|
-| Auth0 access token vs ID token for API Bearer | Planned |
-| Collection delete semantics (`collectionId` null, share cascade) | Planned |
+| Auth0 access token vs ID token for API Bearer | Accepted |
+| Collection delete semantics (`collectionId` null, share cascade) | Accepted |
 | CollectionShare read-only share model | Accepted |
 | 404 vs 403 for non-member get-by-id | Accepted |
-| PostgreSQL as primary datastore | Planned |
+| PostgreSQL as primary datastore | Accepted |
 
-## Records
+## ADR: Auth0 access token for API Bearer
+
+**Status:** Accepted
+
+**Context:** The SPA obtains tokens from Auth0; the API must authenticate machine callers, not just prove a browser session.
+
+**Decision:** Require `Authorization: Bearer <access_token>` with audience `https://bbl-candidate-test-api`. Validate with JWKS, RS256 only, strict `iss` / `aud` / `exp`. Reject ID tokens and HS256.
+
+**Consequences:** Web app uses `@auth0/auth0-react` with `authorizationParams.audience` and sends the access token via `@bookmark-manager/api-client`. First `/me` upsert may require an `email` claim on the token.
+
+## ADR: PostgreSQL as primary datastore
+
+**Status:** Accepted
+
+**Context:** Relational data (users, collections, bookmarks, shares) with referential integrity.
+
+**Decision:** Postgres 16 in Docker (host port 5433), Prisma ORM, migrations + seed (≥2 users).
+
+**Consequences:** API owns schema; web never imports Prisma types.
+
+## ADR: Collection delete semantics
+
+**Status:** Accepted
+
+**Context:** Deleting a collection should not delete bookmarks owned by the user.
+
+**Decision:** Prisma `onDelete: Cascade` on `CollectionShare`; bookmarks use `onDelete: SetNull` on `collectionId`.
+
+**Consequences:** Orphaned bookmarks remain owned by the user; shares disappear with the collection.
 
 ### ADR: CollectionShare read-only share model
 
@@ -36,5 +62,3 @@ Living document — ADRs are added as decisions are made during Steps 2–3.
 - **403 Forbidden** — Caller proved read access (owner or grantee) but attempted a write or share-management action reserved for the owner (PATCH/PUT/DELETE collection, bookmark mutations, share CRUD).
 
 **Consequences:** Grantees who attempt mutations get 403; non-members get 404. Same rules apply to bookmark assignment and mutations inside shared collections.
-
-<!-- ADR entries below as they are accepted. -->

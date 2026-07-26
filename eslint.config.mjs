@@ -18,6 +18,13 @@ export default tseslint.config(
     },
   },
   {
+    files: ["apps/api/src/**/*.ts"],
+    rules: {
+      // Nest DI needs runtime class tokens in constructors; type-only imports break e2e/module bootstrap.
+      "@typescript-eslint/consistent-type-imports": "off",
+    },
+  },
+  {
     files: ["apps/web/**/*.{ts,tsx}", "packages/ui/**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
     rules: { ...reactHooks.configs.recommended.rules },

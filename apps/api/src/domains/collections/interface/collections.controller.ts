@@ -21,9 +21,9 @@ import {
   CollectionResponse,
 } from "../../../shared/openapi/api-models";
 import { CollectionsService } from "../application/collections.service";
-import { CreateCollectionDto } from "./dto/create-collection.dto";
-import { PatchCollectionDto } from "./dto/patch-collection.dto";
-import { UpdateCollectionDto } from "./dto/update-collection.dto";
+import type { CreateCollectionDto } from "./dto/create-collection.dto";
+import type { PatchCollectionDto } from "./dto/patch-collection.dto";
+import type { UpdateCollectionDto } from "./dto/update-collection.dto";
 
 @ApiTags("collections")
 @ApiBearerAuth("access-token")

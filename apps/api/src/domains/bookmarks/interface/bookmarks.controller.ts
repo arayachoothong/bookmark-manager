@@ -20,10 +20,10 @@ import type { User } from "@prisma/client";
 import { CurrentUser } from "../../auth/interface/current-user.decorator";
 import { BookmarkResponse } from "../../../shared/openapi/api-models";
 import { BookmarksService } from "../application/bookmarks.service";
-import { CreateBookmarkDto } from "./dto/create-bookmark.dto";
-import { PatchBookmarkDto } from "./dto/patch-bookmark.dto";
-import { QueryBookmarksDto } from "./dto/query-bookmarks.dto";
-import { UpdateBookmarkDto } from "./dto/update-bookmark.dto";
+import type { CreateBookmarkDto } from "./dto/create-bookmark.dto";
+import type { PatchBookmarkDto } from "./dto/patch-bookmark.dto";
+import type { QueryBookmarksDto } from "./dto/query-bookmarks.dto";
+import type { UpdateBookmarkDto } from "./dto/update-bookmark.dto";
 
 @ApiTags("bookmarks")
 @ApiBearerAuth("access-token")

@@ -1,10 +1,9 @@
 import {
-  CanActivate,
-  ExecutionContext,
   Inject,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
+import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { IS_PUBLIC_KEY } from "./public.decorator";
 import type { User } from "@prisma/client";
