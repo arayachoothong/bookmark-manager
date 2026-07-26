@@ -1,0 +1,46 @@
+---
+description: Conventional Commits required for every git commit and PR title
+alwaysApply: true
+---
+
+# Commit & PR title convention
+
+Every commit message and every PR title **must** follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<optional-scope>): <description>
+```
+
+## Format rules
+
+- **type** (required): one of `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+- **scope** (optional): short area — `api`, `web`, `ui`, `api-client`, `infra`, `agent`, `auth`
+- **description**: imperative, lowercase start, no trailing period, ≤72 chars preferred
+- Body (optional): blank line after subject, then why/details
+- Breaking change: `feat(api)!: ...` or `BREAKING CHANGE:` in the footer
+
+## Examples
+
+```
+feat(api): add collections CRUD with ownership checks
+fix(web): gate API queries until auth token getter is ready
+docs: complete README and submission writeups
+chore: scaffold pnpm monorepo and ESLint
+refactor(api): decouple collection access from Prisma repository
+```
+
+## Forbidden
+
+- Sentence-case subjects without a type (`Add X`, `Fix Y`, `Update Z`)
+- WIP / temp / “asdf” messages
+- Squashing history that erases meaningful conventional commits before submit (unless explicitly requested)
+
+## PR titles
+
+PR titles use the same convention as commit subjects, e.g.:
+
+```
+feat: private bookmark manager with Auth0, privacy tests, and web UI
+```
+
+Prefer a single overarching type that matches the PR’s primary purpose (`feat` for new product capability, `fix` for bugfix PRs, etc.).

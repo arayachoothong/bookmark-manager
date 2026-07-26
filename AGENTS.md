@@ -19,6 +19,7 @@ Collection delete: set bookmarks.collectionId = null; cascade-delete shares.
 - Domain-driven folders: api `src/domains/<domain>/{interface,application,infrastructure,domain}` + `src/shared`; web `src/domains/<domain>/{components,hooks,pages}` + `app` + `lib`. Reuse across domains only via shared.
 - Fix ESLint before claiming done. No blanket eslint-disable.
 - Public docs: no employer/bank brand names.
+- **Commits & PR titles:** Conventional Commits only — `<type>(<scope>): <description>` (see `.cursor/rules/commit-convention.mdc`). Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
 
 ## When stuck
 Decide, document in DECISIONS.md, steer the agent — do not silently accept agent defaults that violate privacy.
