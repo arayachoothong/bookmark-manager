@@ -33,6 +33,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter @bookmark-manager/api exec prisma generate
       - run: pnpm lint
       - run: pnpm --filter @bookmark-manager/api test
       - run: pnpm --filter @bookmark-manager/web test
