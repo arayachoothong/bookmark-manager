@@ -6,13 +6,21 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router";
 
 import { useAuthToken } from "../../domains/auth/hooks/useAuthToken";
+import { AlertProvider } from "../../lib/alerts/AlertProvider";
 
 const theme = createTheme({
   palette: {
     mode: "light",
-    primary: {
-      main: "#1565c0",
-    },
+    primary: { main: "#0f766e" },
+    background: { default: "#f4f5f7" },
+    text: { primary: "#1f2933" },
+  },
+  typography: {
+    fontFamily: '"Manrope", system-ui, sans-serif',
+    h1: { fontFamily: '"Fraunces", Georgia, serif' },
+    h2: { fontFamily: '"Fraunces", Georgia, serif' },
+    h3: { fontFamily: '"Fraunces", Georgia, serif' },
+    h4: { fontFamily: '"Fraunces", Georgia, serif' },
   },
 });
 
@@ -57,7 +65,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <Auth0ProviderWithNavigate>{children}</Auth0ProviderWithNavigate>
+        <AlertProvider>
+          <Auth0ProviderWithNavigate>{children}</Auth0ProviderWithNavigate>
+        </AlertProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
