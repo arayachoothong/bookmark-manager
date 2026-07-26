@@ -2,6 +2,18 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+async function ensureCollection(ownerId: string, name: string) {
+  const existing = await prisma.collection.findFirst({
+    where: { ownerId, name },
+  });
+  if (existing) {
+    return existing;
+  }
+  return prisma.collection.create({
+    data: { name, ownerId },
+  });
+}
+
 async function main() {
   const candidate = await prisma.user.upsert({
     where: { email: "candidate@test.com" },
@@ -21,12 +33,8 @@ async function main() {
     },
   });
 
-  await prisma.collection.create({
-    data: { name: "Candidate private", ownerId: candidate.id },
-  });
-  await prisma.collection.create({
-    data: { name: "Alice private", ownerId: alice.id },
-  });
+  await ensureCollection(candidate.id, "Candidate private");
+  await ensureCollection(alice.id, "Alice private");
 }
 
 main()

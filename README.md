@@ -19,21 +19,16 @@ Private read-later bookmark manager (take-home). Monorepo with NestJS API, React
 
 ## Environment
 
-Copy root and app env templates:
+Copy app env templates (API and web are enough for local dev; root `.env.example` is optional convenience):
 
 ```bash
-cp .env.example .env
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-Postgres runs on host port **5433** (see `docker-compose.yml`):
+`apps/api/.env` includes Postgres (**5433** on the host — see `docker-compose.yml`), Auth0 JWT verification (`AUTH0_ISSUER`, `AUTH0_AUDIENCE`), optional `AUTH0_DOMAIN`, and `CORS_ORIGIN=http://localhost:3000`. `pnpm dev:api` loads `apps/api/.env` via Nest `--env-file`.
 
-```env
-DATABASE_URL=postgresql://bookmark:bookmark@localhost:5433/bookmark?schema=public
-```
-
-Auth0 (candidate test tenant) variables are in `.env.example` / `apps/web/.env.example`. Do not commit real secrets.
+Web Auth0 PKCE variables are in `apps/web/.env.example`. Do not commit real secrets.
 
 ## Setup and run
 
