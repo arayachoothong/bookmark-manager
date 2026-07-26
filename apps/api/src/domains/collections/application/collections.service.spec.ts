@@ -64,7 +64,7 @@ describe("CollectionsService", () => {
           { collectionId: "collection-2" },
         ],
       },
-    ] as never);
+    ]);
 
     await expect(
       service.listBookmarks(user, "collection-1"),

@@ -147,6 +147,31 @@ describe("Bookmark search and collection membership (e2e)", () => {
     expect(result.body[0].title).toBe("Matching bookmark");
   });
 
+  it("POST /bookmarks accepts description and PATCH can clear it to null", async () => {
+    const owner = await authRequest(
+      "auth0|bookmark-description",
+      "bookmark-description@example.com",
+    );
+
+    const created = await owner
+      .post("/bookmarks")
+      .send({
+        url: "https://example.com/with-description",
+        title: "With description",
+        description: "Hello",
+      })
+      .expect(201);
+
+    expect(created.body.description).toBe("Hello");
+
+    const cleared = await owner
+      .patch(`/bookmarks/${created.body.id}`)
+      .send({ description: null })
+      .expect(200);
+
+    expect(cleared.body.description).toBeNull();
+  });
+
   it("creates a bookmark with multiple collectionIds", async () => {
     const owner = await authRequest(
       "auth0|multi-create",
