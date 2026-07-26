@@ -11,7 +11,7 @@ export interface BookmarkResponse {
   url: string;
   title: string;
   /** @nullable */
-  notes?: string | null;
+  description?: string | null;
   collectionIds: string[];
   ownerId: string;
   createdAt: string;

@@ -10,6 +10,6 @@ export interface PatchBookmarkDto {
   url?: string;
   title?: string;
   /** @nullable */
-  notes?: string | null;
+  description?: string | null;
   collectionIds?: string[];
 }

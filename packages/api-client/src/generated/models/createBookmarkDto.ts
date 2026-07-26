@@ -9,6 +9,6 @@
 export interface CreateBookmarkDto {
   url: string;
   title: string;
-  notes?: string;
+  description?: string;
   collectionIds?: string[];
 }

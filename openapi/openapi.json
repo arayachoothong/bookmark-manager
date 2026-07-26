@@ -838,7 +838,7 @@
           "title": {
             "type": "string"
           },
-          "notes": {
+          "description": {
             "type": "string",
             "nullable": true
           },
@@ -893,7 +893,7 @@
           "title": {
             "type": "string"
           },
-          "notes": {
+          "description": {
             "type": "string"
           },
           "collectionIds": {
@@ -917,7 +917,7 @@
           "title": {
             "type": "string"
           },
-          "notes": {
+          "description": {
             "type": "string",
             "nullable": true
           },
@@ -942,7 +942,7 @@
           "title": {
             "type": "string"
           },
-          "notes": {
+          "description": {
             "type": "string",
             "nullable": true
           },
