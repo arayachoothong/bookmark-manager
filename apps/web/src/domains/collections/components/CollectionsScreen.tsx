@@ -7,12 +7,12 @@ import { Button, PageHeader, Stack } from "@bookmark-manager/ui";
 import { useAuth0 } from "@auth0/auth0-react";
 import Typography from "@mui/material/Typography";
 
-import { CollectionsList } from "../components/CollectionsList";
-import { CreateCollectionForm } from "../components/CreateCollectionForm";
+import { CollectionsList } from "./CollectionsList";
+import { CreateCollectionForm } from "./CreateCollectionForm";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
-export function CollectionsPage() {
+export function CollectionsScreen() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } =
     useAuth0();
   const { isApiAuthReady } = useAuthToken();

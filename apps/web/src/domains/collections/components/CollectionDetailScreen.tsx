@@ -9,11 +9,15 @@ import { useAuth0 } from "@auth0/auth0-react";
 import Typography from "@mui/material/Typography";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { ShareCollectionForm } from "../components/ShareCollectionForm";
+import { ShareCollectionForm } from "./ShareCollectionForm";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
+import {
+  CollectionAccessRole,
+  collectionAccessRole,
+} from "../constants/collection-access.constant";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
-export function CollectionDetailPage() {
+export function CollectionDetailScreen() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
@@ -139,7 +143,8 @@ export function CollectionDetailPage() {
     );
   }
 
-  const isOwner = meQuery.data.id === collection.ownerId;
+  const role = collectionAccessRole(meQuery.data.id, collection.ownerId);
+  const isOwner = role === CollectionAccessRole.Owner;
 
   return (
     <Stack className="mx-auto max-w-3xl gap-6 p-6">

@@ -1,14 +1,12 @@
-import type { CollectionResponse } from "@bookmark-manager/api-client";
 import { Button, Stack } from "@bookmark-manager/ui";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router";
 
-type CollectionsListProps = {
-  collections: CollectionResponse[];
-  currentUserId?: string;
-  deletingId?: string;
-  onDelete: (id: string) => void;
-};
+import {
+  CollectionAccessRole,
+  collectionAccessRole,
+} from "../constants/collection-access.constant";
+import type { CollectionsListProps } from "../interfaces/collections-list.interface";
 
 export function CollectionsList({
   collections,
@@ -27,7 +25,11 @@ export function CollectionsList({
   return (
     <ul className="flex list-none flex-col gap-2 p-0">
       {collections.map((collection) => {
-        const isOwner = currentUserId === collection.ownerId;
+        const role = collectionAccessRole(currentUserId, collection.ownerId);
+        const caption =
+          role === CollectionAccessRole.Owner
+            ? "Owned by you"
+            : "Shared with you (read-only)";
 
         return (
           <li key={collection.id}>
@@ -43,10 +45,10 @@ export function CollectionsList({
                 {collection.name}
               </Link>
               <Typography variant="caption" color="text.secondary">
-                {isOwner ? "Owned by you" : "Shared with you (read-only)"}
+                {caption}
               </Typography>
             </Stack>
-            {isOwner ? (
+            {role === CollectionAccessRole.Owner ? (
               <Button
                 color="error"
                 size="small"
