@@ -1,5 +1,4 @@
 import {
-  getBookmarksControllerListQueryKey,
   getCollectionsControllerListBookmarksQueryKey,
   useBookmarksControllerRemove,
   useCollectionsControllerGetOne,
@@ -17,6 +16,7 @@ import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { routeForQueryError } from "../../../lib/helpers/query-error-route.helper";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { BookmarksList } from "../../bookmarks/components/BookmarksList";
+import { invalidateBookmarkCaches } from "../../bookmarks/helpers/bookmark-query.helper";
 import { CollectionAccessRole } from "../constants/collection-access.constant";
 import { collectionAccessRole } from "../helpers/collection-access.helper";
 
@@ -52,12 +52,10 @@ export function CollectionDetailScreen() {
 
   const removeMutation = useBookmarksControllerRemove({
     mutation: {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: getCollectionsControllerListBookmarksQueryKey(id),
-        });
-        void queryClient.invalidateQueries({
-          queryKey: getBookmarksControllerListQueryKey(),
+      onSuccess: (_data, variables) => {
+        invalidateBookmarkCaches(queryClient, {
+          bookmarkId: variables.id,
+          collectionId: id,
         });
         showSuccess("Bookmark deleted.");
         setDeleteBookmarkId(null);

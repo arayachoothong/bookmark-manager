@@ -1,6 +1,4 @@
 import {
-  getBookmarksControllerGetOneQueryKey,
-  getBookmarksControllerListQueryKey,
   useBookmarksControllerGetOne,
   useBookmarksControllerPatch,
   useMeControllerMe,
@@ -17,6 +15,7 @@ import { routeForQueryError } from "../../../lib/helpers/query-error-route.helpe
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { BookmarkAccessRole } from "../constants/bookmark-access.constant";
 import { bookmarkAccessRole } from "../helpers/bookmark-access.helper";
+import { invalidateBookmarkCaches } from "../helpers/bookmark-query.helper";
 
 export function EditBookmarkScreen() {
   const { id = "" } = useParams();
@@ -59,12 +58,10 @@ export function EditBookmarkScreen() {
 
   const patchMutation = useBookmarksControllerPatch({
     mutation: {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: getBookmarksControllerListQueryKey(),
-        });
-        void queryClient.invalidateQueries({
-          queryKey: getBookmarksControllerGetOneQueryKey(id),
+      onSuccess: (_data, variables) => {
+        invalidateBookmarkCaches(queryClient, {
+          bookmarkId: id,
+          collectionId: variables.data.collectionId,
         });
         showSuccess("Bookmark updated.");
         navigate("/bookmarks", { replace: true });

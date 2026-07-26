@@ -1,5 +1,4 @@
 import {
-  getBookmarksControllerListQueryKey,
   useBookmarksControllerCreate,
   useMeControllerMe,
   type CollectionResponse,
@@ -14,6 +13,7 @@ import { features } from "../../../config/features.config";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
+import { invalidateBookmarkCaches } from "../helpers/bookmark-query.helper";
 import { useOwnedCollections } from "../hooks/useOwnedCollections";
 
 function ownedCollectionPrefill(
@@ -80,8 +80,8 @@ export function CreateBookmarkScreen() {
   const createMutation = useBookmarksControllerCreate({
     mutation: {
       onSuccess: (_bookmark, variables) => {
-        void queryClient.invalidateQueries({
-          queryKey: getBookmarksControllerListQueryKey(),
+        invalidateBookmarkCaches(queryClient, {
+          collectionId: variables.data.collectionId,
         });
         showSuccess("Bookmark created.");
         const assignedCollectionId = variables.data.collectionId;

@@ -21,6 +21,7 @@ import { features } from "../../../config/features.config";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
+import { invalidateBookmarkCaches } from "../helpers/bookmark-query.helper";
 
 export function BookmarksScreen() {
   const queryClient = useQueryClient();
@@ -51,9 +52,13 @@ export function BookmarksScreen() {
 
   const removeMutation = useBookmarksControllerRemove({
     mutation: {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: getBookmarksControllerListQueryKey(),
+      onSuccess: (_data, variables) => {
+        const deleted = bookmarksQuery.data?.find(
+          (bookmark) => bookmark.id === variables.id,
+        );
+        invalidateBookmarkCaches(queryClient, {
+          bookmarkId: variables.id,
+          collectionId: deleted?.collectionId,
         });
         showSuccess("Bookmark deleted.");
         setDeleteBookmarkId(null);
