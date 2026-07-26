@@ -1,5 +1,5 @@
-import { BookmarkDetailScreen } from "../../../domains/bookmarks/components/BookmarkDetailScreen";
+import { EditBookmarkScreen } from "../../../domains/bookmarks/components/EditBookmarkScreen";
 
-export function BookmarkDetailPage() {
-  return <BookmarkDetailScreen />;
+export function EditBookmarkPage() {
+  return <EditBookmarkScreen />;
 }
