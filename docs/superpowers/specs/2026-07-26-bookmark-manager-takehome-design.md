@@ -22,7 +22,7 @@ Write agent rules and one reusable agent capability first. Leave workflow/transc
 
 **Ship:**
 
-- `CLAUDE.md` and `AGENTS.md` — product invariants, stack constraints, auth rules, “every security claim needs a test”
+- `CLAUDE.md` and `AGENTS.md` — product invariants, stack constraints, auth rules, OpenAPI-as-contract + codegen rules, “every security claim needs a test”
 - `/.agent/` — at least one capability genuinely used (e.g. `/privacy-review` command that audits data-access for missing owner/share checks)
 - Thin Cursor mirror (`.cursor/rules` or equivalent) pointing at the same invariants
 - Stub living files: `AI_WORKFLOW.md`, `DECISIONS.md`, `API_DESIGN.md`, `transcripts/.gitkeep`, skeleton `README.md`
@@ -39,11 +39,13 @@ Lock auth, privacy, data model, API contract, and a verification harness before 
 
 - Auth and token validation design (documented + testable)
 - Prisma schema + Postgres (Docker Compose)
-- `API_DESIGN.md` filled with contract and privacy enforcement notes
+- NestJS **Swagger / OpenAPI** wired; export OpenAPI document
+- Codegen pipeline into `packages/api-client` (shared types + typed HTTP client)
+- `API_DESIGN.md` filled with contract and privacy enforcement notes (aligned with OpenAPI)
 - First ADRs in `DECISIONS.md`
 - Automated tests proving ownership isolation, share read-only, non-member 404, owner-only mutations, collection-delete nulls `collectionId`
 
-**Success check:** Privacy/security tests are runnable and green against the API layer (with documented Auth0 mock boundary if used).
+**Success check:** Privacy/security tests are runnable and green against the API layer (with documented Auth0 mock boundary if used). Regenerating the client from OpenAPI succeeds and `apps/web` imports types only from `packages/api-client` (no hand-copied DTO interfaces).
 
 ### Step 3 — Real product
 
@@ -56,10 +58,11 @@ End-to-end app: Auth0 login, CRUD, share invite UI, seed data, meaningful commit
 ```
 bookmark-manager/
   apps/
-    api/                 # NestJS + TypeScript + Prisma
+    api/                 # NestJS + TypeScript + Prisma + Swagger
     web/                 # React + Vite + TypeScript
   packages/
     ui/                  # shared UI: MUI + Tailwind-friendly primitives
+    api-client/          # generated from OpenAPI: types + axios client (+ RQ hooks)
   CLAUDE.md
   AGENTS.md
   .agent/
@@ -76,6 +79,26 @@ bookmark-manager/
 
 - Workspace tool: **pnpm** workspaces (Turbo optional for scripts).
 - Graders’ expected top-level names (`backend` / `frontend`) may be mapped in README as `apps/api` and `apps/web`; do not invent a second copy of the apps.
+
+### 3.1 OpenAPI + codegen (shared contract)
+
+**Source of truth:** NestJS controllers/DTOs annotated with `@nestjs/swagger`. The running API exposes Swagger UI (dev) and an OpenAPI JSON document (e.g. `/api-json` or a committed `openapi.json` exported in CI/scripts).
+
+**Codegen:** A workspace script (e.g. `pnpm codegen:api`) runs **Orval** (or equivalent) against that OpenAPI document and writes into `packages/api-client`:
+
+- TypeScript types for request/response bodies and query params
+- Typed **axios** client functions
+- Optional **TanStack Query** hooks (`useQuery` / `useMutation` wrappers) so `apps/web` does not re-declare the same shapes
+
+**Rules:**
+
+1. `apps/web` must not hand-maintain parallel DTO interfaces for API payloads — import from `@bookmark-manager/api-client`.
+2. Prisma models are **not** shared to the frontend. The public contract is OpenAPI DTOs only (keeps persistence details private).
+3. After any API contract change: update Nest DTOs/Swagger → regenerate client → fix compile errors in web.
+4. Generated output is committed (or regenerated in `predev`/`CI`) so reviewers can build without hunting a live server; README documents the command either way.
+5. Agent rules must say: never invent frontend types that diverge from OpenAPI; run codegen instead.
+
+**Why Orval:** matches the chosen frontend stack (axios + TanStack Query) in one pipeline; types stay in lockstep with Swagger.
 
 ## 4. Product requirements
 
@@ -107,6 +130,7 @@ Resolved as follows:
 5. Sharing endpoints (owner): create share by email, list shares, revoke share.
 6. SQL persistence via **Prisma** on **PostgreSQL** (Docker).
 7. Seed data for **at least two distinct users** (second user may exist only as seed for isolation/share tests if only one Auth0 login is interactive).
+8. **Swagger / OpenAPI** via `@nestjs/swagger`: document all public routes, DTOs, auth bearer scheme, and error shapes. Swagger UI enabled in local/dev. OpenAPI document is the input to client codegen.
 
 ### 4.4 Auth / token choice
 
@@ -155,13 +179,13 @@ A bookmark’s `collectionId` is nullable (uncategorised). Both resources belong
 1. React + Vite + TypeScript (no Next.js).
 2. React Router ≥ v8.
 3. MUI ≥ v9 for interactive components; **Tailwind** for layout/spacing utilities.
-4. **axios** HTTP client with auth header interceptor (access token).
-5. **TanStack Query** — `useQuery` / `useMutation` for list, detail, create, delete, share flows.
+4. **axios** HTTP client with auth header interceptor (access token) — prefer the generated client from `@bookmark-manager/api-client`, configured once with the interceptor.
+5. **TanStack Query** — `useQuery` / `useMutation` for list, detail, create, delete, share flows; prefer Orval-generated hooks where available, thin app wrappers only for UI-specific cache keys/invalidation.
 6. Dev server listens on **port 3000** so Auth0 callback/logout URLs match the brief (`http://localhost:3000`).
 7. Pages:
    - `/collections` — list, view one, create, delete; share-invite UI for collections you own
    - `/bookmarks` — list, detail, create, delete, filter by collection
-8. Integrates with `apps/api` using the access token.
+8. Integrates with `apps/api` using the access token and **generated** request/response types only.
 
 ### 4.7 Shared UI (`packages/ui`)
 
@@ -170,7 +194,13 @@ A bookmark’s `collectionId` is nullable (uncategorised). Both resources belong
 - Apps import via a workspace package name (e.g. `@bookmark-manager/ui`).
 - Do not duplicate button/input/dialog patterns inside `apps/web`.
 
-### 4.8 Optional bonuses (after Steps 1–3 are solid)
+### 4.8 Shared API client (`packages/api-client`)
+
+- Generated package; do not hand-edit generated files (edit Nest DTOs/Swagger, then regenerate).
+- Exports types + axios-based API functions (+ React Query hooks if Orval is configured for them).
+- Consumed by `apps/web`; may also be used by API e2e helpers if useful, but Prisma remains the server’s persistence model.
+
+### 4.9 Optional bonuses (after Steps 1–3 are solid)
 
 Dockerfile(s), CI pipeline, `/all` page, full-text search. Modelling collections↔bookmarks is core, not a bonus.
 
@@ -227,6 +257,7 @@ Required at submit time (filled progressively):
 - Public/unauthenticated browsing of any user content
 - Share-by-link without an account
 - Employer/bank branding in the public repository
+- Sharing Prisma models/types directly to the frontend (OpenAPI DTOs + codegen only)
 
 ## 10. Success criteria
 
@@ -234,4 +265,5 @@ Required at submit time (filled progressively):
 - Privacy invariant proven by automated tests.
 - Access-token + RS256 allowlist defended in README and understandably in person.
 - Monorepo runs: Postgres up, API authenticated, web login + collections/bookmarks + read-only share.
+- Swagger documents the API; `pnpm codegen:api` (or documented equivalent) regenerates `packages/api-client`; web compiles against generated types.
 - Submission writeups match the committed code and real transcripts.
