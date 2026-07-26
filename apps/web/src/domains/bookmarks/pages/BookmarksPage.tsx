@@ -17,28 +17,31 @@ import {
   useBookmarkCollectionFilterParam,
 } from "../components/CollectionFilter";
 import { CreateBookmarkForm } from "../components/CreateBookmarkForm";
+import { useAuthToken } from "../../auth/hooks/useAuthToken";
 
 export function BookmarksPage() {
   const queryClient = useQueryClient();
   const filterCollectionId = useBookmarkCollectionFilterParam();
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } =
     useAuth0();
+  const { isApiAuthReady } = useAuthToken();
+  const canFetchApi = isAuthenticated && isApiAuthReady;
 
   const listParams = filterCollectionId
     ? { collectionId: filterCollectionId }
     : undefined;
 
   const meQuery = useMeControllerMe({
-    query: { enabled: isAuthenticated, queryKey: ["/me"] },
+    query: { enabled: canFetchApi, queryKey: ["/me"] },
   });
 
   const collectionsQuery = useCollectionsControllerList({
-    query: { enabled: isAuthenticated, queryKey: ["/collections"] },
+    query: { enabled: canFetchApi, queryKey: ["/collections"] },
   });
 
   const bookmarksQuery = useBookmarksControllerList(listParams, {
     query: {
-      enabled: isAuthenticated,
+      enabled: canFetchApi,
       queryKey: getBookmarksControllerListQueryKey(listParams),
     },
   });

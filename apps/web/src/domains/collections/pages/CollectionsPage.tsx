@@ -9,19 +9,22 @@ import Typography from "@mui/material/Typography";
 
 import { CollectionsList } from "../components/CollectionsList";
 import { CreateCollectionForm } from "../components/CreateCollectionForm";
+import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionsPage() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } =
     useAuth0();
+  const { isApiAuthReady } = useAuthToken();
+  const canFetchApi = isAuthenticated && isApiAuthReady;
   const { invalidateCollectionsList } = useCollectionsQuery();
 
   const meQuery = useMeControllerMe({
-    query: { enabled: isAuthenticated, queryKey: ["/me"] },
+    query: { enabled: canFetchApi, queryKey: ["/me"] },
   });
 
   const collectionsQuery = useCollectionsControllerList({
-    query: { enabled: isAuthenticated, queryKey: ["/collections"] },
+    query: { enabled: canFetchApi, queryKey: ["/collections"] },
   });
 
   const removeMutation = useCollectionsControllerRemove({

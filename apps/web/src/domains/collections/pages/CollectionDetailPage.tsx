@@ -10,24 +10,27 @@ import Typography from "@mui/material/Typography";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { ShareCollectionForm } from "../components/ShareCollectionForm";
+import { useAuthToken } from "../../auth/hooks/useAuthToken";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isApiAuthReady } = useAuthToken();
+  const canFetchApi = isAuthenticated && isApiAuthReady && Boolean(id);
   const { invalidateCollectionsList } = useCollectionsQuery();
 
   const meQuery = useMeControllerMe({
     query: {
-      enabled: isAuthenticated && Boolean(id),
+      enabled: canFetchApi,
       queryKey: ["/me"],
     },
   });
 
   const collectionQuery = useCollectionsControllerGetOne(id, {
     query: {
-      enabled: isAuthenticated && Boolean(id),
+      enabled: canFetchApi,
       queryKey: [`/collections/${id}`],
     },
   });
@@ -35,8 +38,7 @@ export function CollectionDetailPage() {
   const sharesQuery = useSharesControllerList(id, {
     query: {
       enabled:
-        isAuthenticated &&
-        Boolean(id) &&
+        canFetchApi &&
         meQuery.data?.id === collectionQuery.data?.ownerId,
       queryKey: [`/collections/${id}/shares`],
     },

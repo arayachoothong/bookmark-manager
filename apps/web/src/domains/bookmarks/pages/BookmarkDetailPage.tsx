@@ -10,22 +10,26 @@ import Typography from "@mui/material/Typography";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 
+import { useAuthToken } from "../../auth/hooks/useAuthToken";
+
 export function BookmarkDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isApiAuthReady } = useAuthToken();
+  const canFetchApi = isAuthenticated && isApiAuthReady && Boolean(id);
 
   const meQuery = useMeControllerMe({
     query: {
-      enabled: isAuthenticated && Boolean(id),
+      enabled: canFetchApi,
       queryKey: ["/me"],
     },
   });
 
   const bookmarkQuery = useBookmarksControllerGetOne(id, {
     query: {
-      enabled: isAuthenticated && Boolean(id),
+      enabled: canFetchApi,
       queryKey: [`/bookmarks/${id}`],
     },
   });
