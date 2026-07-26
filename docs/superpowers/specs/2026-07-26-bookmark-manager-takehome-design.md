@@ -22,10 +22,11 @@ Write agent rules and one reusable agent capability first. Leave workflow/transc
 
 **Ship:**
 
-- `CLAUDE.md` and `AGENTS.md` — product invariants, stack constraints, auth rules, OpenAPI-as-contract + codegen rules, “every security claim needs a test”
+- `CLAUDE.md` and `AGENTS.md` — product invariants, stack constraints, auth rules, OpenAPI-as-contract + codegen rules, TDD/DRY/SRP/strict-types, “every security claim needs a test”
 - `/.agent/` — at least one capability genuinely used (e.g. `/privacy-review` command that audits data-access for missing owner/share checks)
 - Thin Cursor mirror (`.cursor/rules` or equivalent) pointing at the same invariants
 - Stub living files: `AI_WORKFLOW.md`, `DECISIONS.md`, `API_DESIGN.md`, `transcripts/.gitkeep`, skeleton `README.md`
+- Shared **ESLint** scaffold planned in rules (config landed by early Step 2 so subsequent code is lint-clean)
 
 **Deferred:** filled narrative, real transcripts, full API contract body, application code.
 
@@ -43,7 +44,8 @@ Lock auth, privacy, data model, API contract, and a verification harness before 
 - Codegen pipeline into `packages/api-client` (shared types + typed HTTP client)
 - `API_DESIGN.md` filled with contract and privacy enforcement notes (aligned with OpenAPI)
 - First ADRs in `DECISIONS.md`
-- Automated tests proving ownership isolation, share read-only, non-member 404, owner-only mutations, collection-delete nulls `collectionId`
+- Shared ESLint flat config + `pnpm lint` green on scaffolded packages
+- Automated tests proving ownership isolation, share read-only, non-member 404, owner-only mutations, collection-delete nulls `collectionId` (written TDD-style as features land)
 
 **Success check:** Privacy/security tests are runnable and green against the API layer (with documented Auth0 mock boundary if used). Regenerating the client from OpenAPI succeeds and `apps/web` imports types only from `packages/api-client` (no hand-copied DTO interfaces).
 
@@ -209,11 +211,61 @@ Dockerfile(s), CI pipeline, `/all` page, full-text search. Modelling collections
 **Primary day-to-day:** Cursor (rules + this monorepo).  
 **Graded agent surface:** `CLAUDE.md` / `AGENTS.md` + `/.agent/` with at least one reusable capability that was actually invoked during the build.
 
-Dual setup must stay consistent: Cursor rules and CLAUDE/AGENTS must not contradict on privacy, token choice, or stack.
+Dual setup must stay consistent: Cursor rules and CLAUDE/AGENTS must not contradict on privacy, token choice, stack, or engineering standards (TDD, DRY, SRP, strict types).
+
+## 5.1 Engineering standards (all implementation)
+
+These apply from Step 2 onward and must be encoded in agent rules + ESLint so agents cannot casually violate them.
+
+### TDD
+
+- Implement features and bug fixes **test-first**: failing test → minimal implementation → refactor (stay green).
+- No production behavior without a failing test that was observed to fail for the right reason.
+- Exceptions only: generated code (`packages/api-client`), pure config scaffolds, throwaway spikes (must not ship untested).
+- Privacy/security claims always get tests first (isolation, share read-only, 404 vs 403, token validation).
+- Commit history should show red→green when practical (test commit, then implementation), or at least not bury “tests added after the fact” without noting it in `AI_WORKFLOW.md`.
+
+### TypeScript — strict
+
+- `strict: true` in all TS projects; enable complementary flags where practical (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` if the stack tolerates them — document if skipped).
+- No `any`; no unjustified `as` casts. Prefer narrowing, discriminated unions, and generated OpenAPI types.
+- ESLint `@typescript-eslint/no-explicit-any` (error); ban loose `eslint-disable` without a one-line justification comment.
+
+### DRY — no duplicate code
+
+- One source of truth per concern: OpenAPI/codegen for API shapes; `packages/ui` for shared visuals; shared helpers only when a second real call site exists (no speculative abstractions).
+- Do not copy DTOs, auth header logic, error parsing, or ownership-filter snippets between modules — extract once.
+- Agent rules: if duplication is introduced, refactor before marking the task done.
+
+### Composition + single responsibility (files)
+
+- Prefer **composition** over large “god” components/services.
+- **One primary responsibility per file** — split early rather than grow files. Typical splits:
+  - API: controller / service / repository-or-prisma access / DTO / guard / policy helper — separate files
+  - Web: route page (wiring) / feature container / presentational piece / hook / mutation handler — separate files
+  - `packages/ui`: one exported component (or tightly coupled variant set) per file
+- Components stay small: presentational pieces receive props; data fetching lives in hooks/containers, not deep in leaf UI.
+- If a file mixes unrelated concerns or exceeds a readable local size, split before continuing features.
+
+### ESLint (required)
+
+Monorepo ESLint (flat config preferred) shared or extended per package, run in `lint` script and (when CI exists) on push.
+
+Minimum rule intent:
+
+| Area | Intent |
+| --- | --- |
+| TypeScript | `no-explicit-any` error; unused vars error (allow `_` prefix); consistent-type-imports |
+| Imports | `import/no-duplicates`; no circular deps where plugin supports it |
+| React | hooks rules; no dead JSX patterns; components file naming consistency |
+| Complexity / size | warn or error on excessive complexity; discourage huge files (e.g. `max-lines` tuned reasonably, not punitive) |
+| Restricted | ban importing Prisma from `apps/web` or `packages/ui`; ban hand-edited paths under generated `api-client` output if enforceable |
+
+Document the shared config location in README. Agent rules must say: fix lint errors before claiming done; do not blanket-disable rules.
 
 ## 6. Verification harness
 
-Runnable proof of claims — especially security:
+Runnable proof of claims — especially security. Written **before** or as the first step of the matching implementation (TDD).
 
 1. User A cannot list/get/mutate User B’s private collections or bookmarks.
 2. Shared collection: grantee can read; grantee cannot mutate; non-member gets 404.
@@ -258,10 +310,13 @@ Required at submit time (filled progressively):
 - Share-by-link without an account
 - Employer/bank branding in the public repository
 - Sharing Prisma models/types directly to the frontend (OpenAPI DTOs + codegen only)
+- Large multi-responsibility files / copy-pasted DTOs / `any`-driven shortcuts as the default style
 
 ## 10. Success criteria
 
 - Three-step delivery followed; agent setup precedes product polish.
+- Implementation follows TDD for features and privacy claims; lint (`pnpm lint`) and strict TypeScript pass.
+- Codebase prefers small single-responsibility files and composition; no parallel hand-maintained API types in web.
 - Privacy invariant proven by automated tests.
 - Access-token + RS256 allowlist defended in README and understandably in person.
 - Monorepo runs: Postgres up, API authenticated, web login + collections/bookmarks + read-only share.
