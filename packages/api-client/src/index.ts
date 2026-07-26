@@ -1,4 +1,5 @@
 export {
+  setAccessTokenGetter,
   setAuthTokenProvider,
   customInstance,
   AXIOS_INSTANCE,

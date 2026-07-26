@@ -7,11 +7,14 @@ export const AXIOS_INSTANCE = axios.create({
 /** Web app registers an auth token provider before queries run. */
 let authTokenProvider: (() => Promise<string | undefined>) | undefined;
 
-export function setAuthTokenProvider(
+export function setAccessTokenGetter(
   provider: () => Promise<string | undefined>,
 ): void {
   authTokenProvider = provider;
 }
+
+/** @deprecated Use {@link setAccessTokenGetter} */
+export const setAuthTokenProvider = setAccessTokenGetter;
 
 export const customInstance = async <T>(
   config: AxiosRequestConfig,
