@@ -17,12 +17,14 @@ import { invalidateBookmarkCaches } from "../../bookmarks/helpers/bookmark-query
 
 type AddExistingBookmarksModalProps = {
   collectionId: string;
+  currentUserId: string;
   open: boolean;
   onClose: () => void;
 };
 
 export function AddExistingBookmarksModal({
   collectionId,
+  currentUserId,
   open,
   onClose,
 }: AddExistingBookmarksModalProps) {
@@ -43,9 +45,11 @@ export function AddExistingBookmarksModal({
   const availableBookmarks = useMemo(
     () =>
       (bookmarksQuery.data ?? []).filter(
-        (bookmark) => !bookmark.collectionIds.includes(collectionId),
+        (bookmark) =>
+          bookmark.ownerId === currentUserId &&
+          !bookmark.collectionIds.includes(collectionId),
       ),
-    [bookmarksQuery.data, collectionId],
+    [bookmarksQuery.data, collectionId, currentUserId],
   );
 
   const addMutation = useCollectionsControllerAddBookmarks({

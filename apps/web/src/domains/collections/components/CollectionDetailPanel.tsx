@@ -191,6 +191,7 @@ export function CollectionDetailPanel() {
 
       <AddExistingBookmarksModal
         collectionId={collection.id}
+        currentUserId={meQuery.data.id}
         open={addExistingOpen}
         onClose={() => setAddExistingOpen(false)}
       />
