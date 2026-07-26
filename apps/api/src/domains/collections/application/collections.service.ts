@@ -2,11 +2,15 @@ import {
   BadRequestException,
   Injectable,
 } from "@nestjs/common";
-import type { Bookmark, Collection, User } from "@prisma/client";
+import type { Collection, User } from "@prisma/client";
 import { CollectionAccessService } from "../domain/collection-access.service";
-import { CollectionsRepository } from "../infrastructure/collections.repository";
+import {
+  CollectionsRepository,
+  type CollectionBookmark,
+} from "../infrastructure/collections.repository";
 import type { CreateCollectionDto } from "../interface/dto/create-collection.dto";
 import type { PatchCollectionDto } from "../interface/dto/patch-collection.dto";
+import type { QueryCollectionsDto } from "../interface/dto/query-collections.dto";
 import type { UpdateCollectionDto } from "../interface/dto/update-collection.dto";
 
 function toCollectionResponse(collection: Collection) {
@@ -19,13 +23,13 @@ function toCollectionResponse(collection: Collection) {
   };
 }
 
-function toBookmarkResponse(bookmark: Bookmark) {
+function toBookmarkResponse(bookmark: CollectionBookmark) {
   return {
     id: bookmark.id,
     url: bookmark.url,
     title: bookmark.title,
     notes: bookmark.notes,
-    collectionId: bookmark.collectionId,
+    collectionIds: bookmark.collections.map((row) => row.collectionId),
     ownerId: bookmark.ownerId,
     createdAt: bookmark.createdAt,
     updatedAt: bookmark.updatedAt,
@@ -39,6 +43,11 @@ function assertNonEmptyName(name: unknown): string {
   return name.trim();
 }
 
+function normalizeOptionalQuery(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 @Injectable()
 export class CollectionsService {
   constructor(
@@ -46,9 +55,10 @@ export class CollectionsService {
     private readonly collectionAccessService: CollectionAccessService,
   ) {}
 
-  async listForUser(user: User) {
+  async listForUser(user: User, query: QueryCollectionsDto) {
+    const q = normalizeOptionalQuery(query.q);
     const collections =
-      await this.collectionsRepository.listReadableForUser(user.id);
+      await this.collectionsRepository.listReadableForUser(user.id, q);
     return collections.map(toCollectionResponse);
   }
 

@@ -6,6 +6,10 @@ import type {
   CollectionAccessRecord,
 } from "../domain/collection-access.port";
 
+export type CollectionBookmark = Bookmark & {
+  collections: { collectionId: string }[];
+};
+
 @Injectable()
 export class CollectionsRepository implements CollectionAccessPort {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,9 +51,12 @@ export class CollectionsRepository implements CollectionAccessPort {
     });
   }
 
-  listReadableForUser(userId: string): Promise<Collection[]> {
+  listReadableForUser(userId: string, q?: string): Promise<Collection[]> {
     return this.prisma.collection.findMany({
       where: {
+        ...(q
+          ? { name: { contains: q, mode: "insensitive" as const } }
+          : {}),
         OR: [
           { ownerId: userId },
           { shares: { some: { granteeUserId: userId } } },
@@ -79,9 +86,12 @@ export class CollectionsRepository implements CollectionAccessPort {
     return this.prisma.collection.delete({ where: { id } });
   }
 
-  listBookmarksInCollection(collectionId: string): Promise<Bookmark[]> {
+  listBookmarksInCollection(
+    collectionId: string,
+  ): Promise<CollectionBookmark[]> {
     return this.prisma.bookmark.findMany({
-      where: { collectionId },
+      where: { collections: { some: { collectionId } } },
+      include: { collections: { select: { collectionId: true } } },
       orderBy: { updatedAt: "desc" },
     });
   }
