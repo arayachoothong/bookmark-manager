@@ -10,3 +10,7 @@ coverage/
 .pnpm-debug.log
 *.tsbuildinfo
 apps/web/e2e/.env
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/playwright/.cache/

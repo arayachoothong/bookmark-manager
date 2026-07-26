@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(rootDir, "e2e", ".env") });
+dotenv.config({ path: path.join(rootDir, "e2e", ".env"), quiet: true });
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 

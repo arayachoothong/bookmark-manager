@@ -22,7 +22,9 @@ test("Auth0 login, create collection and bookmark, then log out", async ({
   await page.getByLabel("Name").fill(collectionName);
   await page.getByRole("button", { name: "Create collection" }).click();
   await expect(page).toHaveURL(/\/collections\/[^/]+$/);
-  await expect(page.getByLabel("Name")).toHaveValue(collectionName);
+  await expect(
+    page.getByLabel("Collection name", { exact: true }),
+  ).toHaveValue(collectionName);
 
   // Create bookmark (unassigned → lands on /bookmarks)
   await page.getByRole("button", { name: "Create" }).click();
@@ -34,10 +36,13 @@ test("Auth0 login, create collection and bookmark, then log out", async ({
   await expect(page).toHaveURL(/\/bookmarks\/?$/);
   await expect(page.getByText(bookmarkTitle)).toBeVisible();
 
-  // Log out
+  // Log out — returnTo origin → RequireAuth redirects to Auth0 again
   await page.getByRole("button", { name: "Log out" }).click();
-  // After Auth0 logout returnTo origin — guest home redirects toward collections then Auth0 again, or landing
-  await expect(page.getByRole("button", { name: "Create" })).toHaveCount(0, {
-    timeout: 60_000,
-  });
+  await expect(
+    page
+      .locator(
+        'input#username, input[name="username"], input[name="email"], input#email',
+      )
+      .first(),
+  ).toBeVisible({ timeout: 60_000 });
 });
