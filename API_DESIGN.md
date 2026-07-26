@@ -45,6 +45,17 @@ Living document aligned with Nest Swagger / OpenAPI (`openapi/openapi.json`) and
 
 ## Agent mistakes
 
-1. **Skipping `@bookmark-manager/api-client`** — Defining duplicate DTO types in `apps/web` instead of importing generated models/hooks.
-2. **Treating share grantees as writers** — UI enabling edit/delete for shared collections; API returns **403**.
-3. **OpenAPI export without offline bootstrap** — Running export against a live server that requires DB/auth instead of the offline `export-openapi.ts` test module (no Postgres needed).
+1. **Skipping `@bookmark-manager/api-client` / wrong Orval names**
+   - **Wrong:** Early web drafts guessed hook names (`useListCollections`) and sketched hand-written DTO interfaces instead of importing generated models/hooks.
+   - **Found:** `pnpm --filter @bookmark-manager/web build` / TypeScript failed on missing exports after Task 9 codegen; Orval actually emits controller-prefixed names (e.g. `useCollectionsControllerList`).
+   - **Fixed:** Regenerated via `pnpm codegen:api`, then rewired pages to generated hooks only; agent rules already forbid hand-copied DTOs — enforced in Task 12/13 follow-ups.
+
+2. **Treating share grantees as writers (status + UI)**
+   - **Wrong:** First bookmarks privacy suite treated grantee mutate as **404** (and UI enabled owner actions without waiting for `/me`), matching a naive “no access → 404” default instead of “read access but no write → 403”.
+   - **Found:** Share e2e and the 404-vs-403 ADR required grantee PATCH/DELETE → **403**; Task 7 follow-up + commit `57bf422` realigned bookmark codes. Web: Shared/Delete flash until `meQuery` resolved (Task 12 follow-up).
+   - **Fixed:** `assertCanMutateBookmark` / collection assign via `getWritableOrThrow`; e2e updated; owner UI gated on `/me`. Documented in ADRs and privacy-review checklist.
+
+3. **OpenAPI export assumed a live authenticated server**
+   - **Wrong:** First export approach implied hitting a running API (DB + Auth0) to dump Swagger JSON.
+   - **Found:** Export failed or was blocked without Postgres/JWKS in agent environments; Nest DI/`import type` also produced OpenAPI `"Function"` schema names when DTOs were type-only imports (Task 14 follow-up).
+   - **Fixed:** Offline `export-openapi.ts` Test module (no DB); restore value imports for `@Body`/`@Query` DTOs; `pnpm --filter @bookmark-manager/api export:openapi` then `pnpm codegen:api`.
