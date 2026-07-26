@@ -4,7 +4,7 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "lint": "eslint .",
-    "test": "pnpm --filter @bookmark-manager/api test && pnpm --filter @bookmark-manager/api test:e2e",
+    "test": "pnpm --filter @bookmark-manager/api test && pnpm --filter @bookmark-manager/api test:e2e && pnpm --filter @bookmark-manager/web test",
     "dev:api": "pnpm --filter @bookmark-manager/api start:dev",
     "dev:web": "pnpm --filter @bookmark-manager/web dev",
     "codegen:api": "pnpm --filter @bookmark-manager/api export:openapi && orval",
