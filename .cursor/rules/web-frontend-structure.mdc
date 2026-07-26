@@ -1,0 +1,27 @@
+---
+description: apps/web folder layout — pages vs domains, config, naming
+globs: apps/web/**/*
+alwaysApply: false
+---
+
+# Web frontend structure
+
+## Layout
+- Routes live under `apps/web/src/pages/<route>/` (URL-mirrored folders). Domains **never** contain `pages/`.
+- Thin pages render domain `*Screen` components under `domains/<domain>/components/`.
+- Providers stay in `src/app/providers/`. `AppRouter` reads `src/config/routes.config.tsx`.
+- Cross-cutting HTTP helpers stay in `src/lib/`.
+
+## Domains may contain
+`components/`, `hooks/`, `interfaces/`, `constants/`, `services/`, optional `utils/` — create a folder only when a file lands.
+
+## Naming
+- UI props / view models: `*.interface.ts` under `interfaces/`.
+- TypeScript `enum` values: `*.constant.ts` under `constants/` (file says constant; use `enum`).
+- Do **not** duplicate Orval/OpenAPI DTOs; import from `@bookmark-manager/api-client`.
+
+## Config
+- `src/config/routes.config.tsx` — `{ path, element, requireAuth }`
+- `src/config/features.config.ts` — feature toggles
+- UI copy stays inline in components/screens — do **not** add a labels/i18n config
+- Public URLs must not change without an explicit Auth0 + docs update (`/callback` stays `/callback`).

@@ -62,3 +62,9 @@
 - **403 Forbidden** — Caller proved read access (owner or grantee) but attempted a write or share-management action reserved for the owner (PATCH/PUT/DELETE collection, bookmark mutations, share CRUD).
 
 **Consequences:** Grantees who attempt mutations get 403; non-members get 404. Same rules apply to bookmark assignment and mutations inside shared collections.
+
+## ADR: Thin pages + config-driven web structure (2026-07-26)
+
+- **Decision:** Move route entrypoints to `apps/web/src/pages/`; keep domain logic in screens/hooks/services; drive router and feature flags from `src/config/`. Keep UI copy colocated with components (no labels config).
+- **Why:** Clear Next-like mental model and tighter domain boundaries without over-abstracting copy for a small app.
+- **Consequences:** Page files are shells; Auth0 callback file path may use `pages/auth/callback` while URL remains `/callback`.
