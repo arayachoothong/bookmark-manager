@@ -15,7 +15,7 @@ Private read-later bookmark manager (take-home). Monorepo with NestJS API, React
 
 - Node 20+
 - [pnpm](https://pnpm.io/) 9+
-- Docker (Postgres)
+- Docker + Docker Compose (Postgres, optional full API/web stack)
 
 ## Environment
 
@@ -51,6 +51,39 @@ Regenerate the typed client after API contract changes:
 pnpm codegen:api
 ```
 
+## Docker Compose stack
+
+Full demo stack (migrate → API → nginx SPA):
+
+```bash
+# Load public Compose/build vars (or export the same keys yourself)
+set -a; source .env.example; set +a
+pnpm stack:up
+./scripts/wait-for-stack.sh
+# API http://localhost:4000  |  Web http://localhost:3000
+```
+
+Tear down (removes the Postgres volume):
+
+```bash
+pnpm stack:down
+```
+
+For local Nest + Vite development, keep using **Postgres only**:
+
+```bash
+pnpm db:up          # postgres on :5432
+pnpm --filter @bookmark-manager/api prisma:migrate
+pnpm --filter @bookmark-manager/api prisma:seed   # opt-in
+pnpm dev:api
+pnpm dev:web
+```
+
+**Footguns:**
+- `VITE_*` values are baked at **web image build** time. Changing Auth0/API URL requires `docker compose build web` (or `pnpm stack:up`).
+- The browser must call `http://localhost:4000`, not the Docker DNS name `http://api:4000`.
+- Seed is never run by Compose; use `prisma:seed` when you want demo rows.
+
 ## Auth token
 
 **Choice:** API Bearer credential = Auth0 **access token** for audience `https://bbl-candidate-test-api`.  
@@ -81,6 +114,8 @@ pnpm --filter @bookmark-manager/web test:e2e
 ```
 
 Not part of default `pnpm test` (needs real Auth0 user secrets).
+
+**CI (GitHub Actions):** Job A runs `pnpm lint` + API unit + web Vitest. Job B builds/starts the Compose stack, waits for `GET /me` → 401 and `GET /` → 200, then runs API Jest e2e against composed Postgres. Playwright Auth0 smoke is not part of CI.
 
 ## Scope: completed vs skipped
 
