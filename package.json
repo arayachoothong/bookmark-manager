@@ -8,8 +8,10 @@
     "dev:api": "pnpm --filter @bookmark-manager/api start:dev",
     "dev:web": "pnpm --filter @bookmark-manager/web dev",
     "codegen:api": "pnpm --filter @bookmark-manager/api export:openapi && orval",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "stack:up": "docker compose up --build -d",
+    "stack:down": "docker compose down -v"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
