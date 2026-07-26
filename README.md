@@ -74,11 +74,19 @@ pnpm test   # API unit + privacy e2e (requires Postgres up)
 pnpm lint
 ```
 
+**Web Playwright (opt-in):** requires API + Postgres up, Auth0 SPA env in `apps/web/.env`, and credentials in `apps/web/e2e/.env` (see `apps/web/e2e/.env.example`). Then:
+
+```bash
+pnpm --filter @bookmark-manager/web test:e2e
+```
+
+Not part of default `pnpm test` (needs real Auth0 user secrets).
+
 ## Scope: completed vs skipped
 
 **Completed:** Postgres + Prisma, RS256 access-token verification, `/me`, collections/bookmarks CRUD with privacy rules, collection filter and nested bookmarks, email-based read-only shares (unknown email → 404), collection delete nulls `collectionId`, Swagger + offline OpenAPI export + Orval client, web scaffold (Auth0 PKCE, React Query, Router on port 3000), collections and bookmarks UI wired to generated hooks.
 
-**Deferred:** Auth0 interactive UI smoke (manual login in browser not automated in CI). **Bonuses** (import, tags, full-text search, etc.) explicitly skipped.
+**Deferred:** Auth0 interactive UI smoke is available as opt-in Playwright (`apps/web/e2e`); not in default `pnpm test` or CI without secrets. **Bonuses** (import, tags, full-text search, etc.) explicitly skipped.
 
 **Tests:** Privacy-focused API e2e suites are green when `pnpm db:up` is running.
 
