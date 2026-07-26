@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { AllowedJwtAlg } from "../constants/jwt-alg.constant";
 
 export type JwtClaims = { sub: string; email?: string };
 
@@ -16,11 +17,11 @@ export function createJwtVerifier(options: JwtVerifierOptions) {
       {
         issuer: options.issuer,
         audience: options.audience,
-        algorithms: ["RS256"],
+        algorithms: [AllowedJwtAlg.RS256],
       },
     );
 
-    if (protectedHeader.alg !== "RS256") {
+    if (protectedHeader.alg !== AllowedJwtAlg.RS256) {
       throw new Error("Invalid algorithm: only RS256 allowed");
     }
     if (typeof payload.sub !== "string" || payload.sub.length === 0) {
