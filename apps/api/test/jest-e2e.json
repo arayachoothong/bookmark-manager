@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "maxWorkers": 1,
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest",
+    "^.+\\.js$": [
+      "babel-jest",
+      { "presets": [["@babel/preset-env", { "modules": "commonjs" }]] }
+    ]
+  },
+  "transformIgnorePatterns": ["/node_modules/.pnpm/(?!jose@)"]
+}

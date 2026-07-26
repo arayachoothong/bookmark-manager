@@ -1,0 +1,33 @@
+---
+description: Bookmark Manager product invariants, stack, and privacy rules (mirror of CLAUDE.md / AGENTS.md)
+alwaysApply: true
+---
+
+# Bookmark Manager — Cursor mirror
+
+Full rules: `CLAUDE.md` and `AGENTS.md`. Obey these invariants in every session.
+
+## Product
+- Private read-later; owner-only by default.
+- `CollectionShare` = read-only access to a collection and its bookmarks.
+- Non-members: **404** on get-by-id (never 403 for unknown resources).
+- Mutations and share management: **owner only**.
+- Collection delete: null `bookmarks.collectionId`; cascade-delete shares.
+
+## Stack
+- Monorepo: `apps/api` (NestJS, Prisma, Postgres), `apps/web` (React, Vite, MUI, Tailwind), `packages/ui`, `packages/api-client`.
+- No Next.js. Web port **3000**.
+- Auth: Authorization Code + PKCE. API Bearer = Auth0 **access token** (audience `https://bbl-candidate-test-api`). JWKS **RS256** only; reject HS256/none; strict iss/aud/exp.
+- Contract: Swagger → OpenAPI → Orval → `packages/api-client`. No hand-copied DTOs in web; no Prisma types in web.
+
+## Engineering
+- TDD for features and security claims; strict TypeScript; no `any`; SRP; DRY.
+- Domain folders: api `src/domains/<domain>/{interface,application,infrastructure,domain,constants}` + `src/shared` (constants = TypeScript `enum` in `*.constant.ts`, same naming as web); web `src/pages/<route>/` + `src/domains/<domain>/{components,hooks,interfaces,constants,services,helpers?}` + `src/config/` + `app` + `lib` (helpers = `*.helper.ts`; domains never contain `pages/`; UI copy stays inline; layout chrome is `app/App.tsx`).
+- Fix ESLint before done; no blanket `eslint-disable`.
+- Public docs: no employer/bank brand names.
+
+## Privacy audit
+Use `/.agent/commands/privacy-review.md` (`/privacy-review`) on diffs before claiming security-sensitive work is done.
+
+## When stuck
+Record decisions in `DECISIONS.md`; do not accept defaults that weaken privacy.

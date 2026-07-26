@@ -1,0 +1,32 @@
+---
+description: apps/web folder layout — pages vs domains, config, naming
+globs: apps/web/**/*
+alwaysApply: false
+---
+
+# Web frontend structure
+
+## Layout
+- Routes live under `apps/web/src/pages/<route>/` (URL-mirrored folders). Domains **never** contain `pages/`.
+- Thin pages render domain `*Panel` components under `domains/<domain>/components/`.
+- Providers stay in `src/app/providers/`. `AppRouter` reads `src/config/routes.config.tsx`.
+- Cross-cutting HTTP helpers stay in `src/lib/`.
+
+## Domains may contain
+`components/`, `hooks/`, `interfaces/`, `constants/`, `services/`, `helpers/` — create a folder only when a file lands. Prefer `helpers/` over `utils/`.
+
+## Naming
+- UI props / view models: `*.interface.ts` under `interfaces/`.
+- TypeScript `enum` values: `*.constant.ts` under `constants/` (file says constant; use `enum`). Do **not** put helper functions in constant files.
+- Pure helpers: `*.helper.ts` under `helpers/` (domain) or `src/lib/helpers/` (cross-domain).
+- One file = one responsibility. Split list UIs into `*List` / `*ListItem` / `*ListItemActions`.
+- Do **not** duplicate Orval/OpenAPI DTOs; import from `@bookmark-manager/api-client`.
+- Reuse shared `Loading`, `NoData`, and alert/toast — do not copy loading/empty Typography into every screen.
+- Access failures navigate to `/403` or `/404` pages (API privacy not-invited → `/404`); do not inline not-found/forbidden trees in every screen.
+
+## Config
+- `src/config/routes.config.tsx` — `{ path, element, requireAuth, layout }`
+- `src/config/features.config.ts` — feature toggles
+- Layout chrome is `src/app/App.tsx` (`<App />`), not AppShell
+- UI copy stays inline in components/screens — do **not** add a labels/i18n config
+- Public URLs must not change without an explicit Auth0 + docs update (`/callback` stays `/callback`).

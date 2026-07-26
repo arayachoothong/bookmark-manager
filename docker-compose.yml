@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: bookmark
+      POSTGRES_PASSWORD: bookmark
+      POSTGRES_DB: bookmark
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookmark -d bookmark"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://bookmark:bookmark@postgres:5432/bookmark?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runtime
+    ports: ["4000:4000"]
+    environment:
+      DATABASE_URL: postgresql://bookmark:bookmark@postgres:5432/bookmark?schema=public
+      AUTH0_ISSUER: ${AUTH0_ISSUER:-https://dev-yg.us.auth0.com/}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://bbl-candidate-test-api}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-yg.us.auth0.com}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      PORT: "4000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-dev-yg.us.auth0.com}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID:-H9F6QG5SzTKMv0tbmgxLj9LjG1EKVllA}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://bbl-candidate-test-api}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:4000}
+    ports: ["3000:80"]
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

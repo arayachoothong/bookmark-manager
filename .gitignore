@@ -1,0 +1,16 @@
+.worktrees/
+.superpowers/
+node_modules/
+dist/
+.env
+.env.local
+apps/*/.env
+*.log
+coverage/
+.pnpm-debug.log
+*.tsbuildinfo
+apps/web/e2e/.env
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/playwright/.cache/
