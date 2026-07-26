@@ -390,11 +390,11 @@ async function ensureBookmark(
 
   if (
     input.description !== undefined &&
-    existing.description !== (input.description ?? null)
+    existing.description !== input.description
   ) {
     await prisma.bookmark.update({
       where: { id: existing.id },
-      data: { description: input.description ?? null },
+      data: { description: input.description },
     });
   }
 
