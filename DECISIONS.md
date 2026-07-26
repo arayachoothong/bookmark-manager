@@ -68,3 +68,13 @@
 - **Decision:** Move route entrypoints to `apps/web/src/pages/`; keep domain logic in screens/hooks/services; drive router and feature flags from `src/config/`. Keep UI copy colocated with components (no labels config).
 - **Why:** Clear Next-like mental model and tighter domain boundaries without over-abstracting copy for a small app.
 - **Consequences:** Page files are shells; Auth0 callback file path may use `pages/auth/callback` while URL remains `/callback`.
+
+### ADR: Enum-driven collection access policy (2026-07-26)
+
+**Status:** Accepted
+
+**Context:** Access control branched on `ownerId ===` and `hasShare` booleans, and the same mental model was re-derived in bookmark helpers. Magic strings (`"RS256"`, raw 404/403) were scattered.
+
+**Decision:** `CollectionAccessService` resolves a `CollectionAccessRole` (`Owner` | `Viewer` | `None`) once, then branches read/write on the role. JWT allowed algorithm and the two domain HTTP statuses live in `*.constant.ts` enums. No Prisma DB enums; no shared package with web.
+
+**Consequences:** HTTP semantics unchanged (non-member 404, grantee-write 403). API domains may now carry a `constants/` folder mirroring the web naming convention.
