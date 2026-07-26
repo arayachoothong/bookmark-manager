@@ -26,23 +26,33 @@ model Collection {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  bookmarks Bookmark[]
-  shares    CollectionShare[]
+  owner         User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bookmarkLinks BookmarkCollection[]
+  shares        CollectionShare[]
 }
 
 model Bookmark {
-  id           String   @id @default(cuid())
-  url          String
-  title        String
-  notes        String?
-  collectionId String?
-  ownerId      String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String   @id @default(cuid())
+  url       String
+  title     String
+  notes     String?
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  owner      User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  owner       User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  collections BookmarkCollection[]
+}
+
+model BookmarkCollection {
+  bookmarkId   String
+  collectionId String
+  createdAt    DateTime @default(now())
+
+  bookmark   Bookmark   @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, collectionId])
 }
 
 model CollectionShare {
