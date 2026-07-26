@@ -3,12 +3,15 @@ import {
   useMeControllerMe,
   type CollectionResponse,
 } from "@bookmark-manager/api-client";
-import { Button, PageHeader, Stack, TextField } from "@bookmark-manager/ui";
+import { PageHeader, Stack } from "@bookmark-manager/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 
-import { AssignBookmarkFields } from "./AssignBookmarkFields";
+import {
+  BookmarkForm,
+  type BookmarkFormValues,
+} from "./BookmarkForm";
 import { features } from "../../../config/features.config";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
@@ -19,13 +22,13 @@ import { useOwnedCollections } from "../hooks/useOwnedCollections";
 function ownedCollectionPrefill(
   ownedCollections: CollectionResponse[],
   collectionId: string,
-): string {
+): string[] {
   if (!collectionId) {
-    return "";
+    return [];
   }
   return ownedCollections.some((collection) => collection.id === collectionId)
-    ? collectionId
-    : "";
+    ? [collectionId]
+    : [];
 }
 
 export function CreateBookmarkPanel() {
@@ -42,16 +45,19 @@ export function CreateBookmarkPanel() {
   const { ownedCollections, isLoading: ownedCollectionsLoading } =
     useOwnedCollections(meQuery.data?.id);
 
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [collectionId, setCollectionId] = useState(() =>
-    ownedCollectionPrefill(ownedCollections, queryCollectionId),
-  );
+  const [values, setValues] = useState<BookmarkFormValues>(() => ({
+    url: "",
+    title: "",
+    notes: "",
+    collectionIds: ownedCollectionPrefill(
+      ownedCollections,
+      queryCollectionId,
+    ),
+  }));
   const [hydratedPrefill, setHydratedPrefill] = useState(
     () =>
       !queryCollectionId ||
-      Boolean(ownedCollectionPrefill(ownedCollections, queryCollectionId)),
+      ownedCollectionPrefill(ownedCollections, queryCollectionId).length > 0,
   );
 
   useEffect(() => {
@@ -65,8 +71,8 @@ export function CreateBookmarkPanel() {
       ownedCollections,
       queryCollectionId,
     );
-    if (prefill && collectionId === "") {
-      setCollectionId(prefill);
+    if (prefill.length > 0 && values.collectionIds.length === 0) {
+      setValues((current) => ({ ...current, collectionIds: prefill }));
     }
     setHydratedPrefill(true);
   }, [
@@ -74,17 +80,17 @@ export function CreateBookmarkPanel() {
     ownedCollectionsLoading,
     ownedCollections,
     queryCollectionId,
-    collectionId,
+    values.collectionIds.length,
   ]);
 
   const createMutation = useBookmarksControllerCreate({
     mutation: {
       onSuccess: (_bookmark, variables) => {
         invalidateBookmarkCaches(queryClient, {
-          collectionId: variables.data.collectionId,
+          collectionIds: variables.data.collectionIds,
         });
         showSuccess("Bookmark created.");
-        const assignedCollectionId = variables.data.collectionId;
+        const assignedCollectionId = variables.data.collectionIds?.[0];
         navigate(
           assignedCollectionId
             ? `/collections/${assignedCollectionId}`
@@ -104,20 +110,21 @@ export function CreateBookmarkPanel() {
     return <Navigate to="/403" replace />;
   }
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const trimmedUrl = url.trim();
-    const trimmedTitle = title.trim();
+  function handleSubmit() {
+    const trimmedUrl = values.url.trim();
+    const trimmedTitle = values.title.trim();
     if (!trimmedUrl || !trimmedTitle) {
       return;
     }
-    const trimmedNotes = notes.trim();
+    const trimmedNotes = values.notes.trim();
     createMutation.mutate({
       data: {
         url: trimmedUrl,
         title: trimmedTitle,
         ...(trimmedNotes ? { notes: trimmedNotes } : {}),
-        ...(collectionId ? { collectionId } : {}),
+        ...(values.collectionIds.length > 0
+          ? { collectionIds: values.collectionIds }
+          : {}),
       },
     });
   }
@@ -143,56 +150,18 @@ export function CreateBookmarkPanel() {
         }
       />
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <TextField
-          label="URL"
-          value={url}
-          onChange={(event) => {
-            setUrl(event.target.value);
-            createMutation.reset();
-          }}
-          error={Boolean(errorText)}
-          helperText={errorText}
-          disabled={createMutation.isPending}
-          required
-          autoFocus
-        />
-        <TextField
-          label="Title"
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            createMutation.reset();
-          }}
-          disabled={createMutation.isPending}
-          required
-        />
-        <TextField
-          label="Notes (optional)"
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          disabled={createMutation.isPending}
-          multiline
-          minRows={2}
-        />
-        <AssignBookmarkFields
-          value={collectionId}
-          onChange={setCollectionId}
-          currentUserId={meQuery.data?.id}
-          disabled={createMutation.isPending}
-        />
-        <Stack direction="row">
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={
-              createMutation.isPending || !url.trim() || !title.trim()
-            }
-          >
-            Create bookmark
-          </Button>
-        </Stack>
-      </form>
+      <BookmarkForm
+        values={values}
+        onChange={(nextValues) => {
+          setValues(nextValues);
+          createMutation.reset();
+        }}
+        onSubmit={handleSubmit}
+        currentUserId={meQuery.data?.id}
+        submitLabel="Create bookmark"
+        disabled={createMutation.isPending}
+        errorText={errorText}
+      />
     </Stack>
   );
 }

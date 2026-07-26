@@ -1,5 +1,6 @@
 import type { BookmarkResponse } from "@bookmark-manager/api-client";
 import { Stack } from "@bookmark-manager/ui";
+import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router";
 
@@ -58,6 +59,18 @@ export function BookmarkListItem({
           <Typography variant="caption" color="text.secondary">
             {caption}
           </Typography>
+          {bookmark.collectionIds.length > 0 ? (
+            <Stack direction="row" className="flex-wrap gap-1 pt-1">
+              {bookmark.collectionIds.map((collectionId) => (
+                <Chip
+                  key={collectionId}
+                  label={collectionId}
+                  size="small"
+                  variant="outlined"
+                />
+              ))}
+            </Stack>
+          ) : null}
         </Stack>
         {isOwner || onRemove ? (
           <BookmarkListItemActions

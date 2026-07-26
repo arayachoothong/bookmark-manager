@@ -36,14 +36,14 @@ export function AssignBookmarkPanel() {
     },
   });
 
-  const [collectionId, setCollectionId] = useState("");
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     if (!bookmarkQuery.data || hydrated) {
       return;
     }
-    setCollectionId(bookmarkQuery.data.collectionId ?? "");
+    setCollectionIds(bookmarkQuery.data.collectionIds);
     setHydrated(true);
   }, [bookmarkQuery.data, hydrated]);
 
@@ -87,7 +87,7 @@ export function AssignBookmarkPanel() {
     assignment.mutate(
       {
         id,
-        data: { collectionId: collectionId ? collectionId : null },
+        data: { collectionIds },
       },
       {
         onError: (error) => {
@@ -115,8 +115,8 @@ export function AssignBookmarkPanel() {
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <AssignBookmarkFields
-          value={collectionId}
-          onChange={setCollectionId}
+          value={collectionIds}
+          onChange={setCollectionIds}
           currentUserId={meQuery.data.id}
           disabled={assignment.isPending}
         />

@@ -1,14 +1,19 @@
 import {
   useBookmarksControllerGetOne,
   useBookmarksControllerPatch,
+  useBookmarksControllerRemove,
   useMeControllerMe,
 } from "@bookmark-manager/api-client";
-import { Button, Loading, NoData, PageHeader, Stack, TextField } from "@bookmark-manager/ui";
+import { Button, Loading, NoData, PageHeader, Stack } from "@bookmark-manager/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 
-import { AssignBookmarkFields } from "./AssignBookmarkFields";
+import {
+  BookmarkForm,
+  type BookmarkFormValues,
+} from "./BookmarkForm";
+import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { routeForQueryError } from "../../../lib/helpers/query-error-route.helper";
@@ -39,20 +44,25 @@ export function EditBookmarkPanel() {
     },
   });
 
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [collectionId, setCollectionId] = useState("");
+  const [values, setValues] = useState<BookmarkFormValues>({
+    url: "",
+    title: "",
+    notes: "",
+    collectionIds: [],
+  });
   const [hydrated, setHydrated] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!bookmarkQuery.data || hydrated) {
       return;
     }
-    setUrl(bookmarkQuery.data.url);
-    setTitle(bookmarkQuery.data.title);
-    setNotes(bookmarkQuery.data.notes ?? "");
-    setCollectionId(bookmarkQuery.data.collectionId ?? "");
+    setValues({
+      url: bookmarkQuery.data.url,
+      title: bookmarkQuery.data.title,
+      notes: bookmarkQuery.data.notes ?? "",
+      collectionIds: bookmarkQuery.data.collectionIds,
+    });
     setHydrated(true);
   }, [bookmarkQuery.data, hydrated]);
 
@@ -61,7 +71,10 @@ export function EditBookmarkPanel() {
       onSuccess: (_data, variables) => {
         invalidateBookmarkCaches(queryClient, {
           bookmarkId: id,
-          collectionId: variables.data.collectionId,
+          collectionIds: [
+            ...(bookmarkQuery.data?.collectionIds ?? []),
+            ...(variables.data.collectionIds ?? []),
+          ],
         });
         showSuccess("Bookmark updated.");
         navigate("/bookmarks", { replace: true });
@@ -70,6 +83,22 @@ export function EditBookmarkPanel() {
         showError(
           getHttpErrorMessage(error, "Could not update bookmark. Try again."),
         );
+      },
+    },
+  });
+
+  const removeMutation = useBookmarksControllerRemove({
+    mutation: {
+      onSuccess: () => {
+        invalidateBookmarkCaches(queryClient, {
+          bookmarkId: id,
+          collectionIds: bookmarkQuery.data?.collectionIds,
+        });
+        showSuccess("Bookmark deleted.");
+        navigate("/bookmarks", { replace: true });
+      },
+      onError: (error) => {
+        showError(getHttpErrorMessage(error, "Could not delete bookmark."));
       },
     },
   });
@@ -102,21 +131,20 @@ export function EditBookmarkPanel() {
     return <Navigate to="/403" replace />;
   }
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const trimmedUrl = url.trim();
-    const trimmedTitle = title.trim();
+  function handleSubmit() {
+    const trimmedUrl = values.url.trim();
+    const trimmedTitle = values.title.trim();
     if (!trimmedUrl || !trimmedTitle) {
       return;
     }
-    const trimmedNotes = notes.trim();
+    const trimmedNotes = values.notes.trim();
     patchMutation.mutate({
       id,
       data: {
         url: trimmedUrl,
         title: trimmedTitle,
         notes: trimmedNotes ? trimmedNotes : null,
-        collectionId: collectionId ? collectionId : null,
+        collectionIds: values.collectionIds,
       },
     });
   }
@@ -142,56 +170,38 @@ export function EditBookmarkPanel() {
         }
       />
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <TextField
-          label="URL"
-          value={url}
-          onChange={(event) => {
-            setUrl(event.target.value);
-            patchMutation.reset();
-          }}
-          error={Boolean(errorText)}
-          helperText={errorText}
-          disabled={patchMutation.isPending}
-          required
-          autoFocus
-        />
-        <TextField
-          label="Title"
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            patchMutation.reset();
-          }}
-          disabled={patchMutation.isPending}
-          required
-        />
-        <TextField
-          label="Notes (optional)"
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          disabled={patchMutation.isPending}
-          multiline
-          minRows={2}
-        />
-        <AssignBookmarkFields
-          value={collectionId}
-          onChange={setCollectionId}
-          currentUserId={meQuery.data.id}
-          disabled={patchMutation.isPending}
-        />
-        <Stack direction="row">
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={
-              patchMutation.isPending || !url.trim() || !title.trim()
-            }
-          >
-            Save bookmark
-          </Button>
-        </Stack>
-      </form>
+      <BookmarkForm
+        values={values}
+        onChange={(nextValues) => {
+          setValues(nextValues);
+          patchMutation.reset();
+        }}
+        onSubmit={handleSubmit}
+        currentUserId={meQuery.data.id}
+        submitLabel="Save bookmark"
+        disabled={patchMutation.isPending || removeMutation.isPending}
+        errorText={errorText}
+      />
+      <Stack direction="row">
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={() => setDeleteOpen(true)}
+          disabled={patchMutation.isPending || removeMutation.isPending}
+        >
+          Delete bookmark
+        </Button>
+      </Stack>
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete bookmark?"
+        message="This permanently deletes the bookmark. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        busy={removeMutation.isPending}
+        onConfirm={() => removeMutation.mutate({ id })}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </Stack>
   );
 }

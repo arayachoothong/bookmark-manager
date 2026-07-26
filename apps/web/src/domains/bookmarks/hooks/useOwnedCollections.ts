@@ -5,7 +5,7 @@ import { useAuthToken } from "../../auth/hooks/useAuthToken";
 export function useOwnedCollections(currentUserId?: string) {
   const { isApiAuthReady } = useAuthToken();
 
-  const collectionsQuery = useCollectionsControllerList({
+  const collectionsQuery = useCollectionsControllerList(undefined, {
     query: { enabled: isApiAuthReady, queryKey: ["/collections"] },
   });
 

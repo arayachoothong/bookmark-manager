@@ -23,8 +23,9 @@ export function AssignBookmarkModal({
 }: AssignBookmarkModalProps) {
   const { isApiAuthReady } = useAuthToken();
   const { showSuccess, showError } = useAlert();
-  const currentCollectionId = currentCollectionIds?.[0] ?? "";
-  const [collectionId, setCollectionId] = useState(currentCollectionId);
+  const [collectionIds, setCollectionIds] = useState(
+    currentCollectionIds ?? [],
+  );
 
   const meQuery = useMeControllerMe({
     query: { enabled: isApiAuthReady && open, queryKey: ["/me"] },
@@ -39,9 +40,9 @@ export function AssignBookmarkModal({
 
   useEffect(() => {
     if (open) {
-      setCollectionId(currentCollectionId ?? "");
+      setCollectionIds(currentCollectionIds ?? []);
     }
-  }, [open, currentCollectionId]);
+  }, [open, currentCollectionIds]);
 
   function handleSave() {
     if (!bookmarkId) {
@@ -50,7 +51,7 @@ export function AssignBookmarkModal({
     assignment.mutate(
       {
         id: bookmarkId,
-        data: { collectionIds: collectionId ? [collectionId] : [] },
+        data: { collectionIds },
       },
       {
         onError: (error) => {
@@ -87,8 +88,8 @@ export function AssignBookmarkModal({
       }
     >
       <AssignBookmarkFields
-        value={collectionId}
-        onChange={setCollectionId}
+        value={collectionIds}
+        onChange={setCollectionIds}
         currentUserId={meQuery.data?.id}
         disabled={assignment.isPending}
       />
