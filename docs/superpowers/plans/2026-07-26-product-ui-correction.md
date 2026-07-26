@@ -428,9 +428,8 @@ function toBookmarkResponse(bookmark: BookmarkWithCollections) {
 }
 
 function normalizeOptionalQuery(value?: string): string | undefined {
-  if (value === undefined) return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 ```
 
