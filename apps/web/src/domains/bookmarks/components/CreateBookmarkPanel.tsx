@@ -55,13 +55,14 @@ export function CreateBookmarkPanel() {
     ),
   }));
   const [hydratedPrefill, setHydratedPrefill] = useState(
-    () =>
-      !queryCollectionId ||
-      ownedCollectionPrefill(ownedCollections, queryCollectionId).length > 0,
+    () => !queryCollectionId,
   );
 
   useEffect(() => {
     if (hydratedPrefill) {
+      return;
+    }
+    if (!meQuery.data?.id) {
       return;
     }
     if (ownedCollectionsLoading) {
@@ -77,6 +78,7 @@ export function CreateBookmarkPanel() {
     setHydratedPrefill(true);
   }, [
     hydratedPrefill,
+    meQuery.data?.id,
     ownedCollectionsLoading,
     ownedCollections,
     queryCollectionId,
