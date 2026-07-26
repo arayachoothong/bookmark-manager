@@ -1,0 +1,22 @@
+{
+  "name": "bookmark-manager",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "pnpm --filter @bookmark-manager/api test",
+    "dev:api": "pnpm --filter @bookmark-manager/api start:dev",
+    "dev:web": "pnpm --filter @bookmark-manager/web dev",
+    "codegen:api": "pnpm --filter @bookmark-manager/api export:openapi && orval",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "orval": "^7.5.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.21.0"
+  }
+}

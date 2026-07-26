@@ -6,3 +6,5 @@ dist/
 apps/*/.env
 *.log
 coverage/
+.pnpm-debug.log
+*.tsbuildinfo
