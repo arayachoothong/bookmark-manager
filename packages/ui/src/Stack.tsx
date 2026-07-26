@@ -1,13 +1,11 @@
 import type { HTMLAttributes, ReactNode } from "react";
 
+import { hasGapClass, joinClasses } from "./join-classes";
+
 export type StackProps = HTMLAttributes<HTMLDivElement> & {
   direction?: "row" | "column";
   children?: ReactNode;
 };
-
-function joinClasses(...parts: Array<string | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
 
 export function Stack({
   direction = "column",
@@ -20,7 +18,7 @@ export function Stack({
       className={joinClasses(
         "flex",
         direction === "row" ? "flex-row" : "flex-col",
-        "gap-4",
+        !hasGapClass(className) ? "gap-4" : undefined,
         className,
       )}
       {...rest}

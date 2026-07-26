@@ -1,6 +1,7 @@
 import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 
+import { joinClasses } from "./join-classes";
 import { Stack } from "./Stack";
 
 export type PageHeaderProps = {
@@ -9,10 +10,6 @@ export type PageHeaderProps = {
   actions?: ReactNode;
   className?: string;
 };
-
-function joinClasses(...parts: Array<string | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
 
 export function PageHeader({ title, subtitle, actions, className }: PageHeaderProps) {
   return (
