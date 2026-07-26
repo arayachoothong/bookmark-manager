@@ -146,6 +146,7 @@ export function BookmarksScreen() {
           deletingId={
             removeMutation.isPending ? removeMutation.variables?.id : undefined
           }
+          onAssign={() => undefined}
           onDelete={(id) => removeMutation.mutate({ id })}
         />
       )}

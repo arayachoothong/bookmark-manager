@@ -10,6 +10,8 @@ export function BookmarksList({
   bookmarks,
   currentUserId,
   deletingId,
+  showAssign: _showAssign = true,
+  onAssign: _onAssign,
   onDelete,
 }: BookmarksListProps) {
   if (bookmarks.length === 0) {

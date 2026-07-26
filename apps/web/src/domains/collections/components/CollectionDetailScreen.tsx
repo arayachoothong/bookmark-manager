@@ -1,27 +1,33 @@
 import {
+  getBookmarksControllerListQueryKey,
+  getCollectionsControllerListBookmarksQueryKey,
+  useBookmarksControllerRemove,
   useCollectionsControllerGetOne,
-  useCollectionsControllerRemove,
+  useCollectionsControllerListBookmarks,
   useMeControllerMe,
-  useSharesControllerList,
 } from "@bookmark-manager/api-client";
-import { Button, PageHeader, Stack } from "@bookmark-manager/ui";
-import { useAuth0 } from "@auth0/auth0-react";
-import Typography from "@mui/material/Typography";
-import { Link, useNavigate, useParams } from "react-router";
+import { Loading, NoData, PageHeader, Stack } from "@bookmark-manager/ui";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Link, Navigate, useParams } from "react-router";
 
-import { ShareCollectionForm } from "./ShareCollectionForm";
+import { ConfirmDialog } from "../../../components/ConfirmDialog";
+import { useAlert } from "../../../lib/alerts/AlertProvider";
+import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
+import { routeForQueryError } from "../../../lib/helpers/query-error-route.helper";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
+import { BookmarksList } from "../../bookmarks/components/BookmarksList";
 import { CollectionAccessRole } from "../constants/collection-access.constant";
 import { collectionAccessRole } from "../helpers/collection-access.helper";
-import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionDetailScreen() {
   const { id = "" } = useParams();
-  const navigate = useNavigate();
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const queryClient = useQueryClient();
   const { isApiAuthReady } = useAuthToken();
-  const canFetchApi = isAuthenticated && isApiAuthReady && Boolean(id);
-  const { invalidateCollectionsList } = useCollectionsQuery();
+  const { showSuccess, showError } = useAlert();
+  const [deleteBookmarkId, setDeleteBookmarkId] = useState<string | null>(null);
+
+  const canFetchApi = isApiAuthReady && Boolean(id);
 
   const meQuery = useMeControllerMe({
     query: {
@@ -37,171 +43,114 @@ export function CollectionDetailScreen() {
     },
   });
 
-  const sharesQuery = useSharesControllerList(id, {
+  const bookmarksQuery = useCollectionsControllerListBookmarks(id, {
     query: {
-      enabled:
-        canFetchApi &&
-        meQuery.data?.id === collectionQuery.data?.ownerId,
-      queryKey: [`/collections/${id}/shares`],
+      enabled: canFetchApi && collectionQuery.isSuccess,
+      queryKey: getCollectionsControllerListBookmarksQueryKey(id),
     },
   });
 
-  const removeMutation = useCollectionsControllerRemove({
+  const removeMutation = useBookmarksControllerRemove({
     mutation: {
       onSuccess: () => {
-        void invalidateCollectionsList();
-        navigate("/collections", { replace: true });
+        void queryClient.invalidateQueries({
+          queryKey: getCollectionsControllerListBookmarksQueryKey(id),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: getBookmarksControllerListQueryKey(),
+        });
+        showSuccess("Bookmark deleted.");
+        setDeleteBookmarkId(null);
+      },
+      onError: (error) => {
+        showError(getHttpErrorMessage(error, "Could not delete bookmark."));
       },
     },
   });
 
-  if (isLoading) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Loading session…</Typography>
-      </Stack>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <Stack className="mx-auto max-w-3xl gap-4 p-6">
-        <PageHeader title="Collection" />
-        <Button
-          onClick={() =>
-            loginWithRedirect({
-              appState: { returnTo: `/collections/${id}` },
-            })
-          }
-        >
-          Log in
-        </Button>
-      </Stack>
-    );
-  }
-
   if (!id) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Missing collection id.</Typography>
-      </Stack>
-    );
-  }
-
-  if (collectionQuery.isLoading) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Loading collection…</Typography>
-      </Stack>
-    );
+    return <Navigate to="/404" replace />;
   }
 
   if (collectionQuery.isError) {
-    return (
-      <Stack className="mx-auto max-w-3xl gap-4 p-6">
-        <PageHeader title="Collection" />
-        <Typography color="error" variant="body2">
-          Collection not found or you do not have access.
-        </Typography>
-        <Link to="/collections" className="text-sm text-blue-800 no-underline hover:underline">
-          Back to collections
-        </Link>
-      </Stack>
-    );
+    const route = routeForQueryError(collectionQuery.error) ?? "/404";
+    return <Navigate to={route} replace />;
+  }
+
+  if (
+    !isApiAuthReady ||
+    collectionQuery.isLoading ||
+    meQuery.isLoading ||
+    bookmarksQuery.isLoading
+  ) {
+    return <Loading label="Loading collection…" />;
+  }
+
+  if (meQuery.isError || !meQuery.data || !collectionQuery.data) {
+    return <NoData message="Could not load collection." />;
   }
 
   const collection = collectionQuery.data;
-  if (!collection) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Loading collection…</Typography>
-      </Stack>
-    );
-  }
-
-  if (meQuery.isLoading) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Loading account…</Typography>
-      </Stack>
-    );
-  }
-
-  if (meQuery.isError || !meQuery.data) {
-    return (
-      <Stack className="mx-auto max-w-3xl gap-4 p-6">
-        <PageHeader title={collection.name} />
-        <Typography color="error" variant="body2">
-          Could not load account.
-        </Typography>
-        <Link to="/collections" className="text-sm text-blue-800 no-underline hover:underline">
-          Back to collections
-        </Link>
-      </Stack>
-    );
-  }
-
-  const role = collectionAccessRole(meQuery.data.id, collection.ownerId);
-  const isOwner = role === CollectionAccessRole.Owner;
+  const isOwner =
+    collectionAccessRole(meQuery.data.id, collection.ownerId) ===
+    CollectionAccessRole.Owner;
 
   return (
-    <Stack className="mx-auto max-w-3xl gap-6 p-6">
+    <Stack className="gap-6">
       <PageHeader
         title={collection.name}
         subtitle={
           isOwner ? "You own this collection" : "Shared with you (read-only)"
         }
         actions={
-          <Link
-            to="/collections"
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
-          >
-            Back
-          </Link>
+          <Stack direction="row" className="items-center gap-2">
+            {isOwner ? (
+              <Link
+                to={`/bookmarks/new?collectionId=${collection.id}`}
+                className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
+              >
+                Add bookmark
+              </Link>
+            ) : null}
+            <Link
+              to="/collections"
+              className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
+            >
+              Back
+            </Link>
+          </Stack>
         }
       />
 
-      <Typography variant="body2" color="text.secondary">
-        Updated {new Date(collection.updatedAt).toLocaleString()}
-      </Typography>
+      {bookmarksQuery.isError ? (
+        <NoData message="Could not load bookmarks." />
+      ) : (
+        <BookmarksList
+          bookmarks={bookmarksQuery.data ?? []}
+          currentUserId={meQuery.data.id}
+          deletingId={
+            removeMutation.isPending ? removeMutation.variables?.id : undefined
+          }
+          showAssign={false}
+          onAssign={() => undefined}
+          onDelete={(bookmarkId) => setDeleteBookmarkId(bookmarkId)}
+        />
+      )}
 
-      {isOwner ? (
-        <>
-          <ShareCollectionForm collectionId={collection.id} />
-
-          <Stack className="gap-2">
-            <Typography variant="subtitle2">People with access</Typography>
-            {sharesQuery.isLoading ? (
-              <Typography variant="body2">Loading shares…</Typography>
-            ) : sharesQuery.isError ? (
-              <Typography color="error" variant="body2">
-                Could not load shares.
-              </Typography>
-            ) : sharesQuery.data && sharesQuery.data.length > 0 ? (
-              <ul className="list-none p-0">
-                {sharesQuery.data.map((share) => (
-                  <Typography key={share.granteeUserId} component="li" variant="body2">
-                    {share.email}
-                  </Typography>
-                ))}
-              </ul>
-            ) : (
-              <Typography color="text.secondary" variant="body2">
-                Not shared with anyone yet.
-              </Typography>
-            )}
-          </Stack>
-
-          <Button
-            color="error"
-            variant="outlined"
-            disabled={removeMutation.isPending}
-            onClick={() => removeMutation.mutate({ id: collection.id })}
-          >
-            Delete collection
-          </Button>
-        </>
-      ) : null}
+      <ConfirmDialog
+        open={deleteBookmarkId !== null}
+        title="Delete bookmark?"
+        message="This permanently deletes the bookmark. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        busy={removeMutation.isPending}
+        onConfirm={() => {
+          if (deleteBookmarkId) {
+            removeMutation.mutate({ id: deleteBookmarkId });
+          }
+        }}
+        onCancel={() => setDeleteBookmarkId(null)}
+      />
     </Stack>
   );
 }
