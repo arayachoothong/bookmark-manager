@@ -9,6 +9,8 @@
 | CollectionShare read-only share model | Accepted |
 | 404 vs 403 for non-member get-by-id | Accepted |
 | PostgreSQL as primary datastore | Accepted |
+| Thin pages + config-driven web structure | Accepted |
+| Enum-driven collection access policy | Accepted |
 
 ## ADR: Auth0 access token for API Bearer
 
@@ -81,7 +83,7 @@
 
 **Agent steer:** Agents dump routes under `domains/*/pages` or grow fat page files. We wrote the structure design/plan first, then Cursor rule `web-frontend-structure.mdc`, and verified with the Task 6 structure checklist (`test ! -d …/domains/.../pages`).
 
-### ADR: Enum-driven collection access policy (2026-07-26)
+## ADR: Enum-driven collection access policy (2026-07-26)
 
 **Status:** Accepted
 
