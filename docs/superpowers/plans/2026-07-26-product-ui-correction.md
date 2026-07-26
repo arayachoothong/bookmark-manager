@@ -575,6 +575,8 @@ await prisma.collection.deleteMany();
 Replace create bodies `collectionId: x` → `collectionIds: [x]`.
 Replace assertions on `collectionId` → `collectionIds`.
 
+In `collections.privacy.e2e-spec.ts`, rewrite the test currently named like “DELETE collection nulls bookmark.collectionId…” so that after collection delete: the bookmark row still exists, and no `BookmarkCollection` rows remain for that collection (join cascade). Create bookmarks via `collectionIds: [id]` (or membership POST).
+
 - [ ] **Step 2: New e2e file cases**
 
 Same auth harness as privacy tests:
