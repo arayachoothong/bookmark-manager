@@ -115,7 +115,29 @@ export function CollectionDetailPage() {
     );
   }
 
-  const isOwner = meQuery.data?.id === collection.ownerId;
+  if (meQuery.isLoading) {
+    return (
+      <Stack className="mx-auto max-w-3xl p-6">
+        <Typography variant="body2">Loading account…</Typography>
+      </Stack>
+    );
+  }
+
+  if (meQuery.isError || !meQuery.data) {
+    return (
+      <Stack className="mx-auto max-w-3xl gap-4 p-6">
+        <PageHeader title={collection.name} />
+        <Typography color="error" variant="body2">
+          Could not load account.
+        </Typography>
+        <Link to="/collections" className="text-sm text-blue-800 no-underline hover:underline">
+          Back to collections
+        </Link>
+      </Stack>
+    );
+  }
+
+  const isOwner = meQuery.data.id === collection.ownerId;
 
   return (
     <Stack className="mx-auto max-w-3xl gap-6 p-6">

@@ -82,10 +82,16 @@ export function CollectionsPage() {
         <Typography color="error" variant="body2">
           Could not load collections.
         </Typography>
+      ) : meQuery.isLoading ? (
+        <Typography variant="body2">Loading account…</Typography>
+      ) : meQuery.isError || !meQuery.data ? (
+        <Typography color="error" variant="body2">
+          Could not load account.
+        </Typography>
       ) : (
         <CollectionsList
           collections={collectionsQuery.data ?? []}
-          currentUserId={meQuery.data?.id}
+          currentUserId={meQuery.data.id}
           deletingId={
             removeMutation.isPending ? removeMutation.variables?.id : undefined
           }

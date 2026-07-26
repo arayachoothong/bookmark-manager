@@ -4,6 +4,24 @@ import { useState, type FormEvent } from "react";
 
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
+type ApiErrorBody = { message?: string };
+
+function isHttpError(
+  error: unknown,
+): error is { response?: { status?: number; data?: ApiErrorBody } } {
+  return typeof error === "object" && error !== null && "response" in error;
+}
+
+function createErrorMessage(error: unknown): string {
+  if (isHttpError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+  return "Could not create collection. Try again.";
+}
+
 export function CreateCollectionForm() {
   const [name, setName] = useState("");
   const { invalidateCollectionsList } = useCollectionsQuery();
@@ -26,6 +44,10 @@ export function CreateCollectionForm() {
     createMutation.mutate({ data: { name: trimmed } });
   }
 
+  const errorText = createMutation.isError
+    ? createErrorMessage(createMutation.error)
+    : undefined;
+
   return (
     <form
       className="flex flex-row items-start gap-2"
@@ -35,7 +57,12 @@ export function CreateCollectionForm() {
         label="New collection name"
         size="small"
         value={name}
-        onChange={(event) => setName(event.target.value)}
+        onChange={(event) => {
+          setName(event.target.value);
+          createMutation.reset();
+        }}
+        error={Boolean(errorText)}
+        helperText={errorText}
         disabled={createMutation.isPending}
         className="min-w-0 flex-1"
       />
