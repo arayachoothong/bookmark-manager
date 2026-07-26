@@ -1,3 +1,4 @@
+import { CollectionAccessRole } from "../constants/collection-access.constant";
 import { ForbiddenError, NotFoundError } from "./collection.errors";
 import { CollectionAccessService } from "./collection-access.service";
 import type { CollectionAccessPort, CollectionAccessRecord } from "./collection-access.port";
@@ -74,5 +75,37 @@ describe("CollectionAccessService", () => {
     await expect(
       service.assertCanWriteCollection(ownerId, collectionId),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  describe("resolveAccessRole", () => {
+    it("returns Owner for the owner without checking shares", async () => {
+      port.findCollectionById.mockResolvedValue(collection);
+      const result = await service.resolveAccessRole(ownerId, collectionId);
+      expect(result.role).toBe(CollectionAccessRole.Owner);
+      expect(result.collection).toEqual(collection);
+      expect(port.hasShare).not.toHaveBeenCalled();
+    });
+
+    it("returns Viewer for a grantee", async () => {
+      port.findCollectionById.mockResolvedValue(collection);
+      port.hasShare.mockResolvedValue(true);
+      const result = await service.resolveAccessRole(granteeId, collectionId);
+      expect(result.role).toBe(CollectionAccessRole.Viewer);
+      expect(result.collection).toEqual(collection);
+    });
+
+    it("returns None for a stranger", async () => {
+      port.findCollectionById.mockResolvedValue(collection);
+      port.hasShare.mockResolvedValue(false);
+      const result = await service.resolveAccessRole(strangerId, collectionId);
+      expect(result.role).toBe(CollectionAccessRole.None);
+    });
+
+    it("returns None when the collection is missing", async () => {
+      port.findCollectionById.mockResolvedValue(null);
+      const result = await service.resolveAccessRole(ownerId, collectionId);
+      expect(result.role).toBe(CollectionAccessRole.None);
+      expect(result.collection).toBeNull();
+    });
   });
 });

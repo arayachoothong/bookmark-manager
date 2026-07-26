@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { CollectionAccessRole } from "../constants/collection-access.constant";
 import { ForbiddenError, NotFoundError } from "./collection.errors";
 import {
   COLLECTION_ACCESS_PORT,
@@ -13,6 +14,31 @@ export class CollectionAccessService {
     private readonly collectionAccessPort: CollectionAccessPort,
   ) {}
 
+  async resolveAccessRole(
+    userId: string,
+    collectionId: string,
+  ): Promise<{
+    role: CollectionAccessRole;
+    collection: CollectionAccessRecord | null;
+  }> {
+    const collection =
+      await this.collectionAccessPort.findCollectionById(collectionId);
+    if (!collection) {
+      return { role: CollectionAccessRole.None, collection: null };
+    }
+    if (collection.ownerId === userId) {
+      return { role: CollectionAccessRole.Owner, collection };
+    }
+    const shared = await this.collectionAccessPort.hasShare(
+      collectionId,
+      userId,
+    );
+    return {
+      role: shared ? CollectionAccessRole.Viewer : CollectionAccessRole.None,
+      collection,
+    };
+  }
+
   async getReadableOrThrow(
     userId: string,
     collectionId: string,
@@ -24,22 +50,14 @@ export class CollectionAccessService {
     userId: string,
     collectionId: string,
   ): Promise<CollectionAccessRecord> {
-    const collection =
-      await this.collectionAccessPort.findCollectionById(collectionId);
-    if (!collection) {
+    const { role, collection } = await this.resolveAccessRole(
+      userId,
+      collectionId,
+    );
+    if (role === CollectionAccessRole.None || !collection) {
       throw new NotFoundError("Collection not found");
     }
-    if (collection.ownerId === userId) {
-      return collection;
-    }
-    const shared = await this.collectionAccessPort.hasShare(
-      collectionId,
-      userId,
-    );
-    if (shared) {
-      return collection;
-    }
-    throw new NotFoundError("Collection not found");
+    return collection;
   }
 
   async getWritableOrThrow(
@@ -53,19 +71,14 @@ export class CollectionAccessService {
     userId: string,
     collectionId: string,
   ): Promise<CollectionAccessRecord> {
-    const collection =
-      await this.collectionAccessPort.findCollectionById(collectionId);
-    if (!collection) {
-      throw new NotFoundError("Collection not found");
-    }
-    if (collection.ownerId === userId) {
+    const { role, collection } = await this.resolveAccessRole(
+      userId,
+      collectionId,
+    );
+    if (role === CollectionAccessRole.Owner && collection) {
       return collection;
     }
-    const shared = await this.collectionAccessPort.hasShare(
-      collectionId,
-      userId,
-    );
-    if (shared) {
+    if (role === CollectionAccessRole.Viewer) {
       throw new ForbiddenError();
     }
     throw new NotFoundError("Collection not found");
