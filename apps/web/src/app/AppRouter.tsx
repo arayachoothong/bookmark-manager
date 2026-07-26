@@ -1,10 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 
-import { CallbackPage } from "../domains/auth/pages/CallbackPage";
-import { BookmarkDetailPage } from "../pages/bookmarks/[id]";
-import { BookmarksPage } from "../pages/bookmarks";
-import { CollectionDetailPage } from "../pages/collections/[id]";
-import { CollectionsPage } from "../pages/collections";
+import { appRoutes } from "../config/routes.config";
 import { AppProviders } from "./providers/AppProviders";
 
 export function AppRouter() {
@@ -12,12 +8,13 @@ export function AppRouter() {
     <BrowserRouter>
       <AppProviders>
         <Routes>
-          <Route path="/" element={<Navigate to="/collections" replace />} />
-          <Route path="/collections" element={<CollectionsPage />} />
-          <Route path="/collections/:id" element={<CollectionDetailPage />} />
-          <Route path="/bookmarks" element={<BookmarksPage />} />
-          <Route path="/bookmarks/:id" element={<BookmarkDetailPage />} />
-          <Route path="/callback" element={<CallbackPage />} />
+          {appRoutes.map((route) => (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={route.element}
+            />
+          ))}
         </Routes>
       </AppProviders>
     </BrowserRouter>
