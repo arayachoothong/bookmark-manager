@@ -8,5 +8,10 @@ services:
       POSTGRES_DB: bookmark
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookmark -d bookmark"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 volumes:
   pgdata:
