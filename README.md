@@ -34,14 +34,22 @@ Web Auth0 PKCE variables are in `apps/web/.env.example`. Do not commit real secr
 
 ```bash
 pnpm install
-pnpm db:up
-pnpm --filter @bookmark-manager/api prisma:migrate
-pnpm --filter @bookmark-manager/api prisma:seed
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+pnpm dev          # Postgres + migrate + API (:4000) + web (:3000)
+# or: pnpm dev:seed   # same as dev, plus prisma seed before apps
+```
+
+`pnpm dev` starts Docker Postgres if needed, waits until it accepts connections, runs `prisma migrate deploy`, then runs Nest and Vite together (logs prefixed `api` / `web`). Ctrl+C stops the apps; Postgres stays up — use `pnpm db:down` to stop it.
+
+For a single process only:
+
+```bash
 pnpm dev:api    # http://localhost:4000 — Swagger at /api in dev
 pnpm dev:web    # http://localhost:3000
 ```
 
-Demo data: `prisma:seed` creates **3 collections** and **10 bookmarks** owned by `candidate@test.com` (plus Alice’s private collection for share demos). On first Auth0 login, if your token email matches `candidate@test.com`, the API links that user and the demo rows appear. To use your own Auth0 email, change the candidate email in `apps/api/prisma/seed.ts` before seeding.
+Demo data: `pnpm dev:seed` (or `pnpm --filter @bookmark-manager/api prisma:seed`) creates **3 collections** and **10 bookmarks** owned by `candidate@test.com` (plus Alice’s private collection for share demos). On first Auth0 login, if your token email matches `candidate@test.com`, the API links that user and the demo rows appear. To use your own Auth0 email, change the candidate email in `apps/api/prisma/seed.ts` before seeding.
 
 The API enables CORS for `http://localhost:3000` (override with `CORS_ORIGIN`) so the Vite SPA can call the API with credentials during local dev.
 
@@ -69,14 +77,12 @@ Tear down (removes the Postgres volume):
 pnpm stack:down
 ```
 
-For local Nest + Vite development, keep using **Postgres only**:
+For local Nest + Vite development (Postgres only, not the full Docker API/web images):
 
 ```bash
-pnpm db:up          # postgres on :5432
-pnpm --filter @bookmark-manager/api prisma:migrate
-pnpm --filter @bookmark-manager/api prisma:seed   # opt-in
-pnpm dev:api
-pnpm dev:web
+pnpm dev          # or: pnpm dev:seed
+# single process: pnpm dev:api / pnpm dev:web
+# stop Postgres: pnpm db:down
 ```
 
 **Footguns:**
