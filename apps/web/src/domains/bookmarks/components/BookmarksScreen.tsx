@@ -11,15 +11,15 @@ import Typography from "@mui/material/Typography";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 
-import { BookmarksList } from "../components/BookmarksList";
+import { BookmarksList } from "./BookmarksList";
 import {
   CollectionFilter,
   useBookmarkCollectionFilterParam,
-} from "../components/CollectionFilter";
-import { CreateBookmarkForm } from "../components/CreateBookmarkForm";
+} from "./CollectionFilter";
+import { CreateBookmarkForm } from "./CreateBookmarkForm";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 
-export function BookmarksPage() {
+export function BookmarksScreen() {
   const queryClient = useQueryClient();
   const filterCollectionId = useBookmarkCollectionFilterParam();
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } =

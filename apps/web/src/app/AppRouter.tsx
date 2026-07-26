@@ -1,8 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
 import { CallbackPage } from "../domains/auth/pages/CallbackPage";
-import { BookmarkDetailPage } from "../domains/bookmarks/pages/BookmarkDetailPage";
-import { BookmarksPage } from "../domains/bookmarks/pages/BookmarksPage";
+import { BookmarkDetailPage } from "../pages/bookmarks/[id]";
+import { BookmarksPage } from "../pages/bookmarks";
 import { CollectionDetailPage } from "../pages/collections/[id]";
 import { CollectionsPage } from "../pages/collections";
 import { AppProviders } from "./providers/AppProviders";

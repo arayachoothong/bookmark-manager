@@ -1,14 +1,12 @@
-import type { BookmarkResponse } from "@bookmark-manager/api-client";
 import { Button, Stack } from "@bookmark-manager/ui";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router";
 
-type BookmarksListProps = {
-  bookmarks: BookmarkResponse[];
-  currentUserId?: string;
-  deletingId?: string;
-  onDelete: (id: string) => void;
-};
+import {
+  BookmarkAccessRole,
+  bookmarkAccessRole,
+} from "../constants/bookmark-access.constant";
+import type { BookmarksListProps } from "../interfaces/bookmarks-list.interface";
 
 export function BookmarksList({
   bookmarks,
@@ -27,7 +25,11 @@ export function BookmarksList({
   return (
     <ul className="flex list-none flex-col gap-2 p-0">
       {bookmarks.map((bookmark) => {
-        const isOwner = currentUserId === bookmark.ownerId;
+        const role = bookmarkAccessRole(currentUserId, bookmark.ownerId);
+        const caption =
+          role === BookmarkAccessRole.Owner
+            ? "Owned by you"
+            : "Shared collection (read-only)";
 
         return (
           <li key={bookmark.id}>
@@ -51,10 +53,10 @@ export function BookmarksList({
                   {bookmark.url}
                 </a>
                 <Typography variant="caption" color="text.secondary">
-                  {isOwner ? "Owned by you" : "Shared collection (read-only)"}
+                  {caption}
                 </Typography>
               </Stack>
-              {isOwner ? (
+              {role === BookmarkAccessRole.Owner ? (
                 <Button
                   color="error"
                   size="small"

@@ -11,8 +11,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
+import {
+  BookmarkAccessRole,
+  bookmarkAccessRole,
+} from "../constants/bookmark-access.constant";
 
-export function BookmarkDetailPage() {
+export function BookmarkDetailScreen() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -137,7 +141,8 @@ export function BookmarkDetailPage() {
     );
   }
 
-  const isOwner = meQuery.data.id === bookmark.ownerId;
+  const role = bookmarkAccessRole(meQuery.data.id, bookmark.ownerId);
+  const isOwner = role === BookmarkAccessRole.Owner;
 
   return (
     <Stack className="mx-auto max-w-3xl gap-6 p-6">
