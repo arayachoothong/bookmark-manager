@@ -1,5 +1,7 @@
+import { DomainHttpStatus } from "./http-status.constant";
+
 export class ForbiddenError extends Error {
-  readonly statusCode = 403 as const;
+  readonly statusCode = DomainHttpStatus.Forbidden;
 
   constructor(message = "Forbidden") {
     super(message);

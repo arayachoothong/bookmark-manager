@@ -1,5 +1,7 @@
+import { DomainHttpStatus } from "./http-status.constant";
+
 export class NotFoundError extends Error {
-  readonly statusCode = 404 as const;
+  readonly statusCode = DomainHttpStatus.NotFound;
 
   constructor(message = "Not found") {
     super(message);
