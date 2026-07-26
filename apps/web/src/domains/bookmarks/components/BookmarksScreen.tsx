@@ -5,43 +5,46 @@ import {
   useCollectionsControllerList,
   useMeControllerMe,
 } from "@bookmark-manager/api-client";
-import { Button, PageHeader, Stack } from "@bookmark-manager/ui";
-import { useAuth0 } from "@auth0/auth0-react";
-import Typography from "@mui/material/Typography";
+import { Loading, NoData, PageHeader, Stack } from "@bookmark-manager/ui";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
+import { AssignBookmarkModal } from "./AssignBookmarkModal";
 import { BookmarksList } from "./BookmarksList";
 import {
   CollectionFilter,
   useBookmarkCollectionFilterParam,
 } from "./CollectionFilter";
-import { CreateBookmarkForm } from "./CreateBookmarkForm";
+import { ConfirmDialog } from "../../../components/ConfirmDialog";
+import { features } from "../../../config/features.config";
+import { useAlert } from "../../../lib/alerts/AlertProvider";
+import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
 
 export function BookmarksScreen() {
   const queryClient = useQueryClient();
   const filterCollectionId = useBookmarkCollectionFilterParam();
-  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } =
-    useAuth0();
   const { isApiAuthReady } = useAuthToken();
-  const canFetchApi = isAuthenticated && isApiAuthReady;
+  const { showSuccess, showError } = useAlert();
+  const [assignBookmarkId, setAssignBookmarkId] = useState<string | null>(null);
+  const [deleteBookmarkId, setDeleteBookmarkId] = useState<string | null>(null);
 
   const listParams = filterCollectionId
     ? { collectionId: filterCollectionId }
     : undefined;
 
   const meQuery = useMeControllerMe({
-    query: { enabled: canFetchApi, queryKey: ["/me"] },
+    query: { enabled: isApiAuthReady, queryKey: ["/me"] },
   });
 
   const collectionsQuery = useCollectionsControllerList({
-    query: { enabled: canFetchApi, queryKey: ["/collections"] },
+    query: { enabled: isApiAuthReady, queryKey: ["/collections"] },
   });
 
   const bookmarksQuery = useBookmarksControllerList(listParams, {
     query: {
-      enabled: canFetchApi,
+      enabled: isApiAuthReady,
       queryKey: getBookmarksControllerListQueryKey(listParams),
     },
   });
@@ -52,104 +55,113 @@ export function BookmarksScreen() {
         void queryClient.invalidateQueries({
           queryKey: getBookmarksControllerListQueryKey(),
         });
+        showSuccess("Bookmark deleted.");
+        setDeleteBookmarkId(null);
+      },
+      onError: (error) => {
+        showError(getHttpErrorMessage(error, "Could not delete bookmark."));
       },
     },
   });
 
-  if (isLoading) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Loading session…</Typography>
-      </Stack>
-    );
+  useEffect(() => {
+    if (bookmarksQuery.isError) {
+      showError(
+        getHttpErrorMessage(
+          bookmarksQuery.error,
+          "Could not load bookmarks.",
+        ),
+      );
+    }
+  }, [bookmarksQuery.isError, bookmarksQuery.error, showError]);
+
+  useEffect(() => {
+    if (meQuery.isError) {
+      showError(getHttpErrorMessage(meQuery.error, "Could not load account."));
+    }
+  }, [meQuery.isError, meQuery.error, showError]);
+
+  useEffect(() => {
+    if (collectionsQuery.isError) {
+      showError(
+        getHttpErrorMessage(
+          collectionsQuery.error,
+          "Could not load collections.",
+        ),
+      );
+    }
+  }, [collectionsQuery.isError, collectionsQuery.error, showError]);
+
+  if (
+    !isApiAuthReady ||
+    bookmarksQuery.isLoading ||
+    meQuery.isLoading ||
+    collectionsQuery.isLoading
+  ) {
+    return <Loading label="Loading bookmarks…" />;
   }
 
-  if (!isAuthenticated) {
-    return (
-      <Stack className="mx-auto max-w-3xl gap-4 p-6">
-        <PageHeader title="Bookmarks" />
-        <Button
-          onClick={() =>
-            loginWithRedirect({
-              appState: { returnTo: "/bookmarks" },
-            })
-          }
-        >
-          Log in
-        </Button>
-      </Stack>
-    );
+  if (bookmarksQuery.isError || meQuery.isError || !meQuery.data) {
+    return <NoData message="Could not load bookmarks." />;
   }
 
-  const collections = collectionsQuery.data ?? [];
-  const currentUserId = meQuery.data?.id;
-  const defaultCreateCollectionId =
-    currentUserId &&
-    filterCollectionId &&
-    collections.find((collection) => collection.id === filterCollectionId)
-      ?.ownerId === currentUserId
-      ? filterCollectionId
-      : undefined;
+  const bookmarks = bookmarksQuery.data ?? [];
+  const assignBookmark = bookmarks.find(
+    (bookmark) => bookmark.id === assignBookmarkId,
+  );
 
   return (
-    <Stack className="mx-auto max-w-3xl gap-6 p-6">
+    <Stack className="gap-6">
       <PageHeader
         title="Bookmarks"
-        subtitle={user?.email ?? undefined}
         actions={
-          <Stack direction="row" className="items-center gap-2">
+          features.createBookmark ? (
             <Link
-              to="/collections"
+              to="/bookmarks/new"
               className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
             >
-              Collections
+              New bookmark
             </Link>
-            <Button
-              size="small"
-              onClick={() =>
-                logout({ logoutParams: { returnTo: window.location.origin } })
-              }
-            >
-              Log out
-            </Button>
-          </Stack>
+          ) : undefined
         }
       />
 
       <CollectionFilter
-        collections={collections}
-        disabled={collectionsQuery.isLoading}
+        collections={collectionsQuery.data ?? []}
+        disabled={collectionsQuery.isError}
       />
 
-      <CreateBookmarkForm
-        collections={collections}
-        currentUserId={currentUserId}
-        defaultCollectionId={defaultCreateCollectionId}
+      <BookmarksList
+        bookmarks={bookmarks}
+        currentUserId={meQuery.data.id}
+        deletingId={
+          removeMutation.isPending ? removeMutation.variables?.id : undefined
+        }
+        onAssign={(id) => setAssignBookmarkId(id)}
+        onDelete={(id) => setDeleteBookmarkId(id)}
       />
 
-      {bookmarksQuery.isLoading ? (
-        <Typography variant="body2">Loading bookmarks…</Typography>
-      ) : bookmarksQuery.isError ? (
-        <Typography color="error" variant="body2">
-          Could not load bookmarks.
-        </Typography>
-      ) : meQuery.isLoading ? (
-        <Typography variant="body2">Loading account…</Typography>
-      ) : meQuery.isError || !meQuery.data ? (
-        <Typography color="error" variant="body2">
-          Could not load account.
-        </Typography>
-      ) : (
-        <BookmarksList
-          bookmarks={bookmarksQuery.data ?? []}
-          currentUserId={meQuery.data.id}
-          deletingId={
-            removeMutation.isPending ? removeMutation.variables?.id : undefined
+      <AssignBookmarkModal
+        bookmarkId={assignBookmarkId ?? ""}
+        currentCollectionId={assignBookmark?.collectionId}
+        open={assignBookmarkId !== null}
+        onClose={() => setAssignBookmarkId(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteBookmarkId !== null}
+        title="Delete bookmark?"
+        message="This permanently deletes the bookmark. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        busy={removeMutation.isPending}
+        onConfirm={() => {
+          if (deleteBookmarkId) {
+            removeMutation.mutate({ id: deleteBookmarkId });
           }
-          onAssign={() => undefined}
-          onDelete={(id) => removeMutation.mutate({ id })}
-        />
-      )}
+        }}
+        onCancel={() => setDeleteBookmarkId(null)}
+      />
     </Stack>
   );
 }
