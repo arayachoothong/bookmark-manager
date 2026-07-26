@@ -7,9 +7,11 @@ export function BookmarksList({
   bookmarks,
   currentUserId,
   deletingId,
+  removingId,
   showAssign = true,
   onAssign,
   onDelete,
+  onRemove,
 }: BookmarksListProps) {
   if (bookmarks.length === 0) {
     return <NoData message="No bookmarks yet." />;
@@ -23,9 +25,11 @@ export function BookmarksList({
           bookmark={bookmark}
           currentUserId={currentUserId}
           deletingId={deletingId}
+          removingId={removingId}
           showAssign={showAssign}
           onAssign={onAssign}
           onDelete={onDelete}
+          onRemove={onRemove}
         />
       ))}
     </ul>

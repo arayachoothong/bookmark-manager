@@ -1,15 +1,19 @@
 import {
   getCollectionsControllerListBookmarksQueryKey,
-  useBookmarksControllerRemove,
   useCollectionsControllerGetOne,
   useCollectionsControllerListBookmarks,
+  useCollectionsControllerRemove,
+  useCollectionsControllerRemoveBookmark,
   useMeControllerMe,
 } from "@bookmark-manager/api-client";
-import { Loading, NoData, PageHeader, Stack } from "@bookmark-manager/ui";
+import { Button, Loading, PageHeader, Stack } from "@bookmark-manager/ui";
+import Typography from "@mui/material/Typography";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, Navigate, useParams } from "react-router";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 
+import { AddExistingBookmarksModal } from "./AddExistingBookmarksModal";
+import { CollectionNameForm } from "./CollectionNameForm";
 import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import { useAlert } from "../../../lib/alerts/AlertProvider";
 import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
@@ -19,13 +23,18 @@ import { BookmarksList } from "../../bookmarks/components/BookmarksList";
 import { invalidateBookmarkCaches } from "../../bookmarks/helpers/bookmark-query.helper";
 import { CollectionAccessRole } from "../constants/collection-access.constant";
 import { collectionAccessRole } from "../helpers/collection-access.helper";
+import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionDetailPanel() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isApiAuthReady } = useAuthToken();
   const { showSuccess, showError } = useAlert();
-  const [deleteBookmarkId, setDeleteBookmarkId] = useState<string | null>(null);
+  const { invalidateCollection, invalidateCollectionsList } =
+    useCollectionsQuery();
+  const [addExistingOpen, setAddExistingOpen] = useState(false);
+  const [deleteCollectionOpen, setDeleteCollectionOpen] = useState(false);
 
   const canFetchApi = isApiAuthReady && Boolean(id);
 
@@ -50,18 +59,36 @@ export function CollectionDetailPanel() {
     },
   });
 
-  const removeMutation = useBookmarksControllerRemove({
+  const removeBookmarkMutation = useCollectionsControllerRemoveBookmark({
     mutation: {
       onSuccess: (_data, variables) => {
         invalidateBookmarkCaches(queryClient, {
-          bookmarkId: variables.id,
+          bookmarkId: variables.bookmarkId,
           collectionId: id,
         });
-        showSuccess("Bookmark deleted.");
-        setDeleteBookmarkId(null);
+        showSuccess("Bookmark removed from collection.");
       },
       onError: (error) => {
-        showError(getHttpErrorMessage(error, "Could not delete bookmark."));
+        showError(
+          getHttpErrorMessage(
+            error,
+            "Could not remove bookmark from collection.",
+          ),
+        );
+      },
+    },
+  });
+
+  const removeCollectionMutation = useCollectionsControllerRemove({
+    mutation: {
+      onSuccess: () => {
+        void invalidateCollection(id);
+        void invalidateCollectionsList();
+        showSuccess("Collection deleted. Your bookmarks were kept.");
+        navigate("/collections", { replace: true });
+      },
+      onError: (error) => {
+        showError(getHttpErrorMessage(error, "Could not delete collection."));
       },
     },
   });
@@ -70,8 +97,10 @@ export function CollectionDetailPanel() {
     return <Navigate to="/404" replace />;
   }
 
-  if (collectionQuery.isError) {
-    const route = routeForQueryError(collectionQuery.error) ?? "/404";
+  const queryError =
+    collectionQuery.error ?? meQuery.error ?? bookmarksQuery.error;
+  if (queryError) {
+    const route = routeForQueryError(queryError) ?? "/404";
     return <Navigate to={route} replace />;
   }
 
@@ -84,8 +113,8 @@ export function CollectionDetailPanel() {
     return <Loading label="Loading collection…" />;
   }
 
-  if (meQuery.isError || !meQuery.data || !collectionQuery.data) {
-    return <NoData message="Could not load collection." />;
+  if (!meQuery.data || !collectionQuery.data) {
+    return <Navigate to="/404" replace />;
   }
 
   const collection = collectionQuery.data;
@@ -96,58 +125,85 @@ export function CollectionDetailPanel() {
   return (
     <Stack className="gap-6">
       <PageHeader
-        title={collection.name}
+        title={isOwner ? "Collection details" : collection.name}
         subtitle={
           isOwner ? "You own this collection" : "Shared with you (read-only)"
         }
         actions={
-          <Stack direction="row" className="items-center gap-2">
-            {isOwner ? (
+          <Link
+            to="/collections"
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
+          >
+            Back
+          </Link>
+        }
+      />
+
+      {isOwner ? (
+        <CollectionNameForm
+          collectionId={collection.id}
+          initialName={collection.name}
+          onDelete={() => setDeleteCollectionOpen(true)}
+        />
+      ) : null}
+
+      <Stack className="gap-3">
+        <Stack
+          direction="row"
+          className="items-center justify-between gap-3"
+        >
+          <Typography variant="h6">Bookmarks</Typography>
+          {isOwner ? (
+            <Stack direction="row" className="items-center gap-2">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setAddExistingOpen(true)}
+              >
+                Add existing
+              </Button>
               <Link
                 to={`/bookmarks/new?collectionId=${collection.id}`}
                 className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
               >
-                Add bookmark
+                Create new
               </Link>
-            ) : null}
-            <Link
-              to="/collections"
-              className="rounded border border-gray-300 px-3 py-1.5 text-sm no-underline hover:bg-gray-50"
-            >
-              Back
-            </Link>
-          </Stack>
-        }
-      />
-
-      {bookmarksQuery.isError ? (
-        <NoData message="Could not load bookmarks." />
-      ) : (
+            </Stack>
+          ) : null}
+        </Stack>
         <BookmarksList
           bookmarks={bookmarksQuery.data ?? []}
           currentUserId={meQuery.data.id}
-          deletingId={
-            removeMutation.isPending ? removeMutation.variables?.id : undefined
+          removingId={
+            removeBookmarkMutation.isPending
+              ? removeBookmarkMutation.variables?.bookmarkId
+              : undefined
           }
           showAssign={false}
-          onAssign={() => undefined}
-          onDelete={(bookmarkId) => setDeleteBookmarkId(bookmarkId)}
+          onRemove={
+            isOwner
+              ? (bookmarkId) =>
+                  removeBookmarkMutation.mutate({ id, bookmarkId })
+              : undefined
+          }
         />
-      )}
+      </Stack>
+
+      <AddExistingBookmarksModal
+        collectionId={collection.id}
+        open={addExistingOpen}
+        onClose={() => setAddExistingOpen(false)}
+      />
 
       <ConfirmDialog
-        open={deleteBookmarkId !== null}
-        title="Delete bookmark?"
-        message="This permanently deletes the bookmark. This cannot be undone."
+        open={deleteCollectionOpen}
+        title="Delete collection?"
+        message="This deletes the collection, but your bookmarks will be kept."
         confirmLabel="Delete"
         destructive
-        busy={removeMutation.isPending}
-        onConfirm={() => {
-          if (deleteBookmarkId) {
-            removeMutation.mutate({ id: deleteBookmarkId });
-          }
-        }}
-        onCancel={() => setDeleteBookmarkId(null)}
+        busy={removeCollectionMutation.isPending}
+        onConfirm={() => removeCollectionMutation.mutate({ id })}
+        onCancel={() => setDeleteCollectionOpen(false)}
       />
     </Stack>
   );

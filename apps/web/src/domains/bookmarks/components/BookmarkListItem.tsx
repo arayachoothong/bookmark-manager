@@ -11,18 +11,22 @@ type BookmarkListItemProps = {
   bookmark: BookmarkResponse;
   currentUserId?: string;
   deletingId?: string;
+  removingId?: string;
   showAssign?: boolean;
-  onAssign: (id: string) => void;
-  onDelete: (id: string) => void;
+  onAssign?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onRemove?: (id: string) => void;
 };
 
 export function BookmarkListItem({
   bookmark,
   currentUserId,
   deletingId,
+  removingId,
   showAssign = true,
   onAssign,
   onDelete,
+  onRemove,
 }: BookmarkListItemProps) {
   const role = bookmarkAccessRole(currentUserId, bookmark.ownerId);
   const isOwner = role === BookmarkAccessRole.Owner;
@@ -55,13 +59,15 @@ export function BookmarkListItem({
             {caption}
           </Typography>
         </Stack>
-        {isOwner ? (
+        {isOwner || onRemove ? (
           <BookmarkListItemActions
             bookmarkId={bookmark.id}
             deleting={deletingId === bookmark.id}
+            removing={removingId === bookmark.id}
             showAssign={showAssign}
-            onAssign={onAssign}
-            onDelete={onDelete}
+            onAssign={isOwner ? onAssign : undefined}
+            onDelete={isOwner ? onDelete : undefined}
+            onRemove={onRemove}
           />
         ) : null}
       </Stack>

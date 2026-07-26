@@ -8,6 +8,7 @@ import type { QueryClient } from "@tanstack/react-query";
 type InvalidateBookmarkCachesOptions = {
   bookmarkId?: string;
   collectionId?: string | null;
+  collectionIds?: Array<string | null | undefined>;
 };
 
 export function invalidateBookmarkCaches(
@@ -25,12 +26,18 @@ export function invalidateBookmarkCaches(
     });
   }
 
-  const collectionId = options?.collectionId;
-  if (typeof collectionId === "string" && collectionId.length > 0) {
+  const collectionIds = new Set([
+    options?.collectionId,
+    ...(options?.collectionIds ?? []),
+  ]);
+  collectionIds.forEach((collectionId) => {
+    if (typeof collectionId !== "string" || collectionId.length === 0) {
+      return;
+    }
     void queryClient.invalidateQueries({
       queryKey: getCollectionsControllerListBookmarksQueryKey(collectionId),
     });
-  }
+  });
 
   void queryClient.invalidateQueries({
     predicate: (query) => {
