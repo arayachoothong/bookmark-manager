@@ -6,9 +6,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface CreateBookmarkDto {
-  url: string;
-  title: string;
-  notes?: string;
-  collectionIds?: string[];
+export interface AddBookmarksToCollectionDto {
+  bookmarkIds: string[];
 }

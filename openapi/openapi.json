@@ -31,7 +31,17 @@
     "/collections": {
       "get": {
         "operationId": "CollectionsController_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive contains match on name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -281,14 +291,12 @@
         "tags": [
           "collections"
         ]
-      }
-    },
-    "/collections/{collectionId}/shares": {
+      },
       "post": {
-        "operationId": "SharesController_create",
+        "operationId": "CollectionsController_addBookmarks",
         "parameters": [
           {
-            "name": "collectionId",
+            "name": "id",
             "required": true,
             "in": "path",
             "schema": {
@@ -301,21 +309,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateShareDto"
+                "$ref": "#/components/schemas/AddBookmarksToCollectionDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ShareResponse"
-                }
-              }
-            }
+            "description": ""
           }
         },
         "security": [
@@ -323,55 +324,17 @@
             "access-token": []
           }
         ],
-        "summary": "Share a collection read-only by email",
         "tags": [
-          "shares"
-        ]
-      },
-      "get": {
-        "operationId": "SharesController_list",
-        "parameters": [
-          {
-            "name": "collectionId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ShareResponse"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "List shares on a collection (owner only)",
-        "tags": [
-          "shares"
+          "collections"
         ]
       }
     },
-    "/collections/{collectionId}/shares/{granteeUserId}": {
+    "/collections/{id}/bookmarks/{bookmarkId}": {
       "delete": {
-        "operationId": "SharesController_revoke",
+        "operationId": "CollectionsController_removeBookmark",
         "parameters": [
           {
-            "name": "collectionId",
+            "name": "id",
             "required": true,
             "in": "path",
             "schema": {
@@ -379,7 +342,7 @@
             }
           },
           {
-            "name": "granteeUserId",
+            "name": "bookmarkId",
             "required": true,
             "in": "path",
             "schema": {
@@ -397,9 +360,8 @@
             "access-token": []
           }
         ],
-        "summary": "Revoke a share",
         "tags": [
-          "shares"
+          "collections"
         ]
       }
     },
@@ -408,10 +370,19 @@
         "operationId": "BookmarksController_list",
         "parameters": [
           {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive contains match on title",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "collectionId",
             "required": false,
             "in": "query",
-            "description": "Filter bookmarks to a collection the caller can read",
+            "description": "Filter to bookmarks in a collection the caller can read",
             "schema": {
               "type": "string"
             }
@@ -628,6 +599,126 @@
           "bookmarks"
         ]
       }
+    },
+    "/collections/{collectionId}/shares": {
+      "post": {
+        "operationId": "SharesController_create",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShareDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Share a collection read-only by email",
+        "tags": [
+          "shares"
+        ]
+      },
+      "get": {
+        "operationId": "SharesController_list",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShareResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List shares on a collection (owner only)",
+        "tags": [
+          "shares"
+        ]
+      }
+    },
+    "/collections/{collectionId}/shares/{granteeUserId}": {
+      "delete": {
+        "operationId": "SharesController_revoke",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "granteeUserId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Revoke a share",
+        "tags": [
+          "shares"
+        ]
+      }
     }
   },
   "info": {
@@ -751,9 +842,11 @@
             "type": "string",
             "nullable": true
           },
-          "collectionId": {
-            "type": "string",
-            "nullable": true
+          "collectionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "ownerId": {
             "type": "string"
@@ -771,10 +864,95 @@
           "id",
           "url",
           "title",
+          "collectionIds",
           "ownerId",
           "createdAt",
           "updatedAt"
         ]
+      },
+      "AddBookmarksToCollectionDto": {
+        "type": "object",
+        "properties": {
+          "bookmarkIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "bookmarkIds"
+        ]
+      },
+      "CreateBookmarkDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "collectionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "url",
+          "title"
+        ]
+      },
+      "UpdateBookmarkDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "url",
+          "title"
+        ]
+      },
+      "PatchBookmarkDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "CreateShareDto": {
         "type": "object",
@@ -807,69 +985,6 @@
           "email",
           "createdAt"
         ]
-      },
-      "CreateBookmarkDto": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "notes": {
-            "type": "string"
-          },
-          "collectionId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "url",
-          "title"
-        ]
-      },
-      "UpdateBookmarkDto": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "notes": {
-            "type": "string",
-            "nullable": true
-          },
-          "collectionId": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "url",
-          "title"
-        ]
-      },
-      "PatchBookmarkDto": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "notes": {
-            "type": "string",
-            "nullable": true
-          },
-          "collectionId": {
-            "type": "string",
-            "nullable": true
-          }
-        }
       }
     }
   }

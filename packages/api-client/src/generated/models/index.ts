@@ -6,9 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './addBookmarksToCollectionDto';
 export * from './bookmarkResponse';
 export * from './bookmarksControllerListParams';
 export * from './collectionResponse';
+export * from './collectionsControllerListParams';
 export * from './createBookmarkDto';
 export * from './createCollectionDto';
 export * from './createShareDto';

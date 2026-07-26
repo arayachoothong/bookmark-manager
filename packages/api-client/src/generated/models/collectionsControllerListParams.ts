@@ -6,13 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 
-export type BookmarksControllerListParams = {
+export type CollectionsControllerListParams = {
 /**
- * Case-insensitive contains match on title
+ * Case-insensitive contains match on name
  */
 q?: string;
-/**
- * Filter to bookmarks in a collection the caller can read
- */
-collectionId?: string;
 };

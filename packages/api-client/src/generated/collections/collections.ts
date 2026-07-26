@@ -20,8 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddBookmarksToCollectionDto,
   BookmarkResponse,
   CollectionResponse,
+  CollectionsControllerListParams,
   CreateCollectionDto,
   PatchCollectionDto,
   UpdateCollectionDto
@@ -38,13 +40,14 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary List collections readable by the caller
  */
 export const collectionsControllerList = (
-    
+    params?: CollectionsControllerListParams,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
       
       
       return customInstance<CollectionResponse[]>(
-      {url: `/collections`, method: 'GET', signal
+      {url: `/collections`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -52,23 +55,23 @@ export const collectionsControllerList = (
 
 
 
-export const getCollectionsControllerListQueryKey = () => {
+export const getCollectionsControllerListQueryKey = (params?: CollectionsControllerListParams,) => {
     return [
-    `/collections`
+    `/collections`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getCollectionsControllerListQueryOptions = <TData = Awaited<ReturnType<typeof collectionsControllerList>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof collectionsControllerList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCollectionsControllerListQueryOptions = <TData = Awaited<ReturnType<typeof collectionsControllerList>>, TError = unknown>(params?: CollectionsControllerListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof collectionsControllerList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCollectionsControllerListQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCollectionsControllerListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof collectionsControllerList>>> = ({ signal }) => collectionsControllerList(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof collectionsControllerList>>> = ({ signal }) => collectionsControllerList(params, requestOptions, signal);
 
       
 
@@ -86,11 +89,11 @@ export type CollectionsControllerListQueryError = unknown
  */
 
 export function useCollectionsControllerList<TData = Awaited<ReturnType<typeof collectionsControllerList>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof collectionsControllerList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+ params?: CollectionsControllerListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof collectionsControllerList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getCollectionsControllerListQueryOptions(options)
+  const queryOptions = getCollectionsControllerListQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -491,3 +494,119 @@ export function useCollectionsControllerListBookmarks<TData = Awaited<ReturnType
 
 
 
+export const collectionsControllerAddBookmarks = (
+    id: string,
+    addBookmarksToCollectionDto: AddBookmarksToCollectionDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<void>(
+      {url: `/collections/${id}/bookmarks`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: addBookmarksToCollectionDto, signal
+    },
+      options);
+    }
+  
+
+
+export const getCollectionsControllerAddBookmarksMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof collectionsControllerAddBookmarks>>, TError,{id: string;data: AddBookmarksToCollectionDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof collectionsControllerAddBookmarks>>, TError,{id: string;data: AddBookmarksToCollectionDto}, TContext> => {
+
+const mutationKey = ['collectionsControllerAddBookmarks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof collectionsControllerAddBookmarks>>, {id: string;data: AddBookmarksToCollectionDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  collectionsControllerAddBookmarks(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CollectionsControllerAddBookmarksMutationResult = NonNullable<Awaited<ReturnType<typeof collectionsControllerAddBookmarks>>>
+    export type CollectionsControllerAddBookmarksMutationBody = AddBookmarksToCollectionDto
+    export type CollectionsControllerAddBookmarksMutationError = unknown
+
+    export const useCollectionsControllerAddBookmarks = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof collectionsControllerAddBookmarks>>, TError,{id: string;data: AddBookmarksToCollectionDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof collectionsControllerAddBookmarks>>,
+        TError,
+        {id: string;data: AddBookmarksToCollectionDto},
+        TContext
+      > => {
+
+      const mutationOptions = getCollectionsControllerAddBookmarksMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    export const collectionsControllerRemoveBookmark = (
+    id: string,
+    bookmarkId: string,
+ options?: SecondParameter<typeof customInstance>,) => {
+      
+      
+      return customInstance<void>(
+      {url: `/collections/${id}/bookmarks/${bookmarkId}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getCollectionsControllerRemoveBookmarkMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof collectionsControllerRemoveBookmark>>, TError,{id: string;bookmarkId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof collectionsControllerRemoveBookmark>>, TError,{id: string;bookmarkId: string}, TContext> => {
+
+const mutationKey = ['collectionsControllerRemoveBookmark'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof collectionsControllerRemoveBookmark>>, {id: string;bookmarkId: string}> = (props) => {
+          const {id,bookmarkId} = props ?? {};
+
+          return  collectionsControllerRemoveBookmark(id,bookmarkId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CollectionsControllerRemoveBookmarkMutationResult = NonNullable<Awaited<ReturnType<typeof collectionsControllerRemoveBookmark>>>
+    
+    export type CollectionsControllerRemoveBookmarkMutationError = unknown
+
+    export const useCollectionsControllerRemoveBookmark = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof collectionsControllerRemoveBookmark>>, TError,{id: string;bookmarkId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof collectionsControllerRemoveBookmark>>,
+        TError,
+        {id: string;bookmarkId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getCollectionsControllerRemoveBookmarkMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    

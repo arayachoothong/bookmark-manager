@@ -12,8 +12,7 @@ export interface BookmarkResponse {
   title: string;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  collectionId?: string | null;
+  collectionIds: string[];
   ownerId: string;
   createdAt: string;
   updatedAt: string;

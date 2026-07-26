@@ -11,6 +11,5 @@ export interface UpdateBookmarkDto {
   title: string;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  collectionId?: string | null;
+  collectionIds?: string[];
 }
