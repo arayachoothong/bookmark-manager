@@ -8,10 +8,22 @@ _Source: SDD Tasks 9–13 reports + Task 14 ESLint/Swagger fixes. Secrets redact
 
 ## Messy bits
 
-- Live-server export idea died without DB/Auth0 → offline `export-openapi.ts` Test module.
-- `consistent-type-imports` autofix turned Nest injectables/DTOs into `import type` → runtime `Function at index [0]` / OpenAPI `"Function"` schemas.
-  - Fix: value imports for DI + `@Body`/`@Query` DTOs; disable rule under `apps/api/src` (`eslint.config.mjs`).
-- Orval hook names (`useCollectionsControllerList`, …) ≠ human guesses → web imports adjusted after first `pnpm codegen:api`.
+- Live-server export idea died without DB/Auth0 → offline `apps/api/src/shared/openapi/export-openapi.ts` builds a Nest **TestingModule**, writes `openapi/openapi.json`, no listen.
+- `consistent-type-imports` autofix turned Nest injectables/DTOs into `import type` → runtime Nest bootstrap errors and useless Swagger shapes.
+  - Runtime (reconstructed): `Nest can't resolve dependencies of the X (?, …). Please make sure that the argument Function at index [0] is available in the Y module context.`
+  - OpenAPI export: request/response component schemas named `"Function"` instead of DTO class names when `@Body()`/`@Query()` types were type-only imports.
+  - Fix: value imports for DI providers and controller DTO parameters; disable `@typescript-eslint/consistent-type-imports` under `apps/api/src` in root `eslint.config.mjs` (web/packages keep the rule).
+- Orval hook names (`useCollectionsControllerList`, `useBookmarksControllerFindAll`, …) ≠ human guesses → web imports adjusted after first `pnpm codegen:api` from root `package.json` script.
+
+## OpenAPI / codegen loop
+
+```bash
+pnpm --filter @bookmark-manager/api export:openapi
+pnpm codegen:api   # Orval → packages/api-client/src/generated/**
+pnpm --filter @bookmark-manager/web build
+```
+
+Regenerate after any controller DTO or route change — hand-editing generated files is forbidden by agent rules.
 
 ## Prompt (Tasks 11–13)
 
