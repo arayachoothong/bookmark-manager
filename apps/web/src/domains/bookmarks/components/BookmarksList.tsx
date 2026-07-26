@@ -2,10 +2,8 @@ import { Button, Stack } from "@bookmark-manager/ui";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router";
 
-import {
-  BookmarkAccessRole,
-  bookmarkAccessRole,
-} from "../constants/bookmark-access.constant";
+import { BookmarkAccessRole } from "../constants/bookmark-access.constant";
+import { bookmarkAccessRole } from "../helpers/bookmark-access.helper";
 import type { BookmarksListProps } from "../interfaces/bookmarks-list.interface";
 
 export function BookmarksList({

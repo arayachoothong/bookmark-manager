@@ -11,10 +11,8 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { ShareCollectionForm } from "./ShareCollectionForm";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
-import {
-  CollectionAccessRole,
-  collectionAccessRole,
-} from "../constants/collection-access.constant";
+import { CollectionAccessRole } from "../constants/collection-access.constant";
+import { collectionAccessRole } from "../helpers/collection-access.helper";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionDetailScreen() {

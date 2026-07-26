@@ -2,10 +2,8 @@ import { Button, Stack } from "@bookmark-manager/ui";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router";
 
-import {
-  CollectionAccessRole,
-  collectionAccessRole,
-} from "../constants/collection-access.constant";
+import { CollectionAccessRole } from "../constants/collection-access.constant";
+import { collectionAccessRole } from "../helpers/collection-access.helper";
 import type { CollectionsListProps } from "../interfaces/collections-list.interface";
 
 export function CollectionsList({

@@ -11,10 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
-import {
-  BookmarkAccessRole,
-  bookmarkAccessRole,
-} from "../constants/bookmark-access.constant";
+import { BookmarkAccessRole } from "../constants/bookmark-access.constant";
+import { bookmarkAccessRole } from "../helpers/bookmark-access.helper";
 
 export function BookmarkDetailScreen() {
   const { id = "" } = useParams();
