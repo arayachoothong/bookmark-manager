@@ -1,15 +1,21 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { AuthModule } from "./domains/auth/auth.module";
 import { AccessTokenGuard } from "./domains/auth/interface/access-token.guard";
+import { CollectionsModule } from "./domains/collections/collections.module";
 import { UsersModule } from "./domains/users/users.module";
+import { DomainExceptionFilter } from "./shared/errors/domain-exception.filter";
 
 @Module({
-  imports: [AuthModule, UsersModule],
+  imports: [AuthModule, UsersModule, CollectionsModule],
   providers: [
     {
       provide: APP_GUARD,
       useClass: AccessTokenGuard,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: DomainExceptionFilter,
     },
   ],
 })
