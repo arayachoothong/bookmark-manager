@@ -75,4 +75,4 @@ pnpm lint
 - [API_DESIGN.md](./API_DESIGN.md) — HTTP contract and privacy notes  
 - [DECISIONS.md](./DECISIONS.md) — ADRs  
 - [AI_WORKFLOW.md](./AI_WORKFLOW.md) — how this was built with agents  
-- [transcripts/](./transcripts/) — session notes (secrets redacted)
+- [transcripts/](./transcripts/) — reconstructed session logs (messy corrections kept; secrets redacted)
