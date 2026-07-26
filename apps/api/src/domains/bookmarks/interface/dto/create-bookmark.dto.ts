@@ -8,7 +8,7 @@ export class CreateBookmarkDto {
   title!: string;
 
   @ApiPropertyOptional()
-  notes?: string;
+  description?: string;
 
   @ApiPropertyOptional({ type: [String] })
   collectionIds?: string[];

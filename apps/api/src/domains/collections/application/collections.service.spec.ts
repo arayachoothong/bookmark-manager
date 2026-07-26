@@ -55,7 +55,7 @@ describe("CollectionsService", () => {
         id: "bookmark-1",
         url: "https://example.com",
         title: "Example",
-        notes: null,
+        description: null,
         ownerId: user.id,
         createdAt: new Date("2026-01-01"),
         updatedAt: new Date("2026-01-02"),

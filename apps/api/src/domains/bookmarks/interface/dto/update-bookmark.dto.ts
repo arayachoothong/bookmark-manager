@@ -8,7 +8,7 @@ export class UpdateBookmarkDto {
   title!: string;
 
   @ApiPropertyOptional({ type: String, nullable: true })
-  notes?: string | null;
+  description?: string | null;
 
   @ApiPropertyOptional({ type: [String] })
   collectionIds?: string[];

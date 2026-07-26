@@ -28,7 +28,7 @@ export class BookmarkResponse {
   title!: string;
 
   @ApiPropertyOptional({ type: String, nullable: true })
-  notes!: string | null;
+  description!: string | null;
 
   @ApiProperty({ type: [String] })
   collectionIds!: string[];

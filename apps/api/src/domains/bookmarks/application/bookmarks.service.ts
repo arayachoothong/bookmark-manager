@@ -20,7 +20,7 @@ function toBookmarkResponse(bookmark: BookmarkWithCollections) {
     id: bookmark.id,
     url: bookmark.url,
     title: bookmark.title,
-    notes: bookmark.notes,
+    description: bookmark.description,
     collectionIds: bookmark.collections.map((row) => row.collectionId),
     ownerId: bookmark.ownerId,
     createdAt: bookmark.createdAt,
@@ -85,7 +85,7 @@ export class BookmarksService {
     const bookmark = await this.bookmarksRepository.create({
       url,
       title,
-      notes: dto.notes ?? null,
+      description: dto.description ?? null,
       owner: { connect: { id: user.id } },
       ...(collectionIds.length > 0
         ? {
@@ -113,7 +113,7 @@ export class BookmarksService {
     const data: Parameters<BookmarksRepository["update"]>[1] = {
       url,
       title,
-      notes: dto.notes ?? null,
+      description: dto.description ?? null,
     };
     const bookmark =
       dto.collectionIds === undefined
@@ -141,8 +141,8 @@ export class BookmarksService {
     if (dto.title !== undefined) {
       data.title = assertNonEmptyString(dto.title, "title");
     }
-    if (dto.notes !== undefined) {
-      data.notes = dto.notes;
+    if (dto.description !== undefined) {
+      data.description = dto.description;
     }
     const bookmark =
       dto.collectionIds === undefined

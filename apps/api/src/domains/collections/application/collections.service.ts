@@ -28,7 +28,7 @@ function toBookmarkResponse(bookmark: CollectionBookmark) {
     id: bookmark.id,
     url: bookmark.url,
     title: bookmark.title,
-    notes: bookmark.notes,
+    description: bookmark.description,
     collectionIds: bookmark.collections.map((row) => row.collectionId),
     ownerId: bookmark.ownerId,
     createdAt: bookmark.createdAt,
