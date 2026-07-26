@@ -3,104 +3,110 @@ import {
   useCollectionsControllerRemove,
   useMeControllerMe,
 } from "@bookmark-manager/api-client";
-import { Button, PageHeader, Stack } from "@bookmark-manager/ui";
-import { useAuth0 } from "@auth0/auth0-react";
-import Typography from "@mui/material/Typography";
+import { Loading, NoData, PageHeader, Stack } from "@bookmark-manager/ui";
+import { useEffect, useState } from "react";
 
 import { CollectionsList } from "./CollectionsList";
-import { CreateCollectionForm } from "./CreateCollectionForm";
+import { ShareCollectionModal } from "./ShareCollectionModal";
+import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import { useAuthToken } from "../../auth/hooks/useAuthToken";
+import { useAlert } from "../../../lib/alerts/AlertProvider";
+import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 export function CollectionsScreen() {
-  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } =
-    useAuth0();
   const { isApiAuthReady } = useAuthToken();
-  const canFetchApi = isAuthenticated && isApiAuthReady;
+  const { showSuccess, showError } = useAlert();
   const { invalidateCollectionsList } = useCollectionsQuery();
+  const [shareCollectionId, setShareCollectionId] = useState<string | null>(
+    null,
+  );
+  const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(
+    null,
+  );
 
   const meQuery = useMeControllerMe({
-    query: { enabled: canFetchApi, queryKey: ["/me"] },
+    query: { enabled: isApiAuthReady, queryKey: ["/me"] },
   });
 
   const collectionsQuery = useCollectionsControllerList({
-    query: { enabled: canFetchApi, queryKey: ["/collections"] },
+    query: { enabled: isApiAuthReady, queryKey: ["/collections"] },
   });
 
   const removeMutation = useCollectionsControllerRemove({
     mutation: {
       onSuccess: () => {
         void invalidateCollectionsList();
+        showSuccess("Collection deleted.");
+        setDeleteCollectionId(null);
+      },
+      onError: (error) => {
+        showError(
+          getHttpErrorMessage(error, "Could not delete collection."),
+        );
       },
     },
   });
 
-  if (isLoading) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6">
-        <Typography variant="body2">Loading session…</Typography>
-      </Stack>
-    );
+  useEffect(() => {
+    if (collectionsQuery.isError) {
+      showError(
+        getHttpErrorMessage(
+          collectionsQuery.error,
+          "Could not load collections.",
+        ),
+      );
+    }
+  }, [collectionsQuery.isError, collectionsQuery.error, showError]);
+
+  useEffect(() => {
+    if (meQuery.isError) {
+      showError(getHttpErrorMessage(meQuery.error, "Could not load account."));
+    }
+  }, [meQuery.isError, meQuery.error, showError]);
+
+  if (!isApiAuthReady || collectionsQuery.isLoading || meQuery.isLoading) {
+    return <Loading label="Loading collections…" />;
   }
 
-  if (!isAuthenticated) {
-    return (
-      <Stack className="mx-auto max-w-3xl p-6 gap-4">
-        <PageHeader title="Collections" />
-        <Button
-          onClick={() =>
-            loginWithRedirect({
-              appState: { returnTo: "/collections" },
-            })
-          }
-        >
-          Log in
-        </Button>
-      </Stack>
-    );
+  if (collectionsQuery.isError || meQuery.isError || !meQuery.data) {
+    return <NoData message="Could not load collections." />;
   }
 
   return (
-    <Stack className="mx-auto max-w-3xl gap-6 p-6">
-      <PageHeader
-        title="Collections"
-        subtitle={user?.email ?? undefined}
-        actions={
-          <Button
-            size="small"
-            onClick={() =>
-              logout({ logoutParams: { returnTo: window.location.origin } })
-            }
-          >
-            Log out
-          </Button>
+    <Stack className="gap-6">
+      <PageHeader title="Collections" />
+
+      <CollectionsList
+        collections={collectionsQuery.data ?? []}
+        currentUserId={meQuery.data.id}
+        deletingId={
+          removeMutation.isPending ? removeMutation.variables?.id : undefined
         }
+        onShare={(id) => setShareCollectionId(id)}
+        onDelete={(id) => setDeleteCollectionId(id)}
       />
 
-      <CreateCollectionForm />
+      <ShareCollectionModal
+        collectionId={shareCollectionId ?? ""}
+        open={shareCollectionId !== null}
+        onClose={() => setShareCollectionId(null)}
+      />
 
-      {collectionsQuery.isLoading ? (
-        <Typography variant="body2">Loading collections…</Typography>
-      ) : collectionsQuery.isError ? (
-        <Typography color="error" variant="body2">
-          Could not load collections.
-        </Typography>
-      ) : meQuery.isLoading ? (
-        <Typography variant="body2">Loading account…</Typography>
-      ) : meQuery.isError || !meQuery.data ? (
-        <Typography color="error" variant="body2">
-          Could not load account.
-        </Typography>
-      ) : (
-        <CollectionsList
-          collections={collectionsQuery.data ?? []}
-          currentUserId={meQuery.data.id}
-          deletingId={
-            removeMutation.isPending ? removeMutation.variables?.id : undefined
+      <ConfirmDialog
+        open={deleteCollectionId !== null}
+        title="Delete collection?"
+        message="This permanently deletes the collection and its bookmarks. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        busy={removeMutation.isPending}
+        onConfirm={() => {
+          if (deleteCollectionId) {
+            removeMutation.mutate({ id: deleteCollectionId });
           }
-          onDelete={(id) => removeMutation.mutate({ id })}
-        />
-      )}
+        }}
+        onCancel={() => setDeleteCollectionId(null)}
+      />
     </Stack>
   );
 }

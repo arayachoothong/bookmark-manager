@@ -4,39 +4,20 @@ import Typography from "@mui/material/Typography";
 import { useState, type FormEvent } from "react";
 
 import { features } from "../../../config/features.config";
+import { useAlert } from "../../../lib/alerts/AlertProvider";
+import { getHttpErrorMessage } from "../../../lib/helpers/http-error.helper";
 import { useCollectionsQuery } from "../hooks/useCollectionsQuery";
 
 type ShareCollectionFormProps = {
   collectionId: string;
+  onSuccess?: () => void;
 };
 
-type ApiErrorBody = { message?: string };
-
-function isHttpError(
-  error: unknown,
-): error is { response?: { status?: number; data?: ApiErrorBody } } {
-  return typeof error === "object" && error !== null && "response" in error;
-}
-
-function shareErrorMessage(error: unknown): string {
-  if (isHttpError(error)) {
-    const status = error.response?.status;
-    const message = error.response?.data?.message;
-    if (status === 404) {
-      return message ?? "User not found";
-    }
-    if (typeof message === "string") {
-      return message;
-    }
-  }
-  return "Could not share collection. Try again.";
-}
-
-export function ShareCollectionForm({ collectionId }: ShareCollectionFormProps) {
-  if (!features.shareCollection) {
-    return null;
-  }
-
+export function ShareCollectionForm({
+  collectionId,
+  onSuccess,
+}: ShareCollectionFormProps) {
+  const { showSuccess, showError } = useAlert();
   const [email, setEmail] = useState("");
   const { invalidateShares } = useCollectionsQuery();
 
@@ -45,9 +26,20 @@ export function ShareCollectionForm({ collectionId }: ShareCollectionFormProps) 
       onSuccess: () => {
         setEmail("");
         void invalidateShares(collectionId);
+        showSuccess("Share invite sent.");
+        onSuccess?.();
+      },
+      onError: (error) => {
+        showError(
+          getHttpErrorMessage(error, "Could not share collection. Try again."),
+        );
       },
     },
   });
+
+  if (!features.shareCollection) {
+    return null;
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -62,7 +54,10 @@ export function ShareCollectionForm({ collectionId }: ShareCollectionFormProps) 
   }
 
   const errorText = shareMutation.isError
-    ? shareErrorMessage(shareMutation.error)
+    ? getHttpErrorMessage(
+        shareMutation.error,
+        "Could not share collection. Try again.",
+      )
     : undefined;
 
   return (
@@ -91,11 +86,6 @@ export function ShareCollectionForm({ collectionId }: ShareCollectionFormProps) 
           Share
         </Button>
       </Stack>
-      {shareMutation.isSuccess ? (
-        <Typography color="success.main" variant="body2">
-          Share invite sent.
-        </Typography>
-      ) : null}
     </form>
   );
 }
