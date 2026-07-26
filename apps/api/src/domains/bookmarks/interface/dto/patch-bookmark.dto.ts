@@ -10,6 +10,6 @@ export class PatchBookmarkDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   notes?: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true })
-  collectionId?: string | null;
+  @ApiPropertyOptional({ type: [String] })
+  collectionIds?: string[];
 }

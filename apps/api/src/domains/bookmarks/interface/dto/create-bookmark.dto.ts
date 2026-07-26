@@ -10,6 +10,6 @@ export class CreateBookmarkDto {
   @ApiPropertyOptional()
   notes?: string;
 
-  @ApiPropertyOptional()
-  collectionId?: string;
+  @ApiPropertyOptional({ type: [String] })
+  collectionIds?: string[];
 }
