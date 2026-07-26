@@ -61,4 +61,24 @@ describe("GET /me (e2e)", () => {
     expect(res.body.auth0Sub).toBe("auth0|me-1");
     expect(res.body.id).toEqual(expect.any(String));
   });
+
+  it("GET /me with token without email returns 200 for existing user", async () => {
+    const sub = "auth0|me-no-email";
+    const withEmail = await signTestAccessToken({
+      sub,
+      email: "persisted@example.com",
+    });
+    await request(app.getHttpServer())
+      .get("/me")
+      .set("Authorization", `Bearer ${withEmail}`)
+      .expect(200);
+
+    const withoutEmail = await signTestAccessToken({ sub });
+    const res = await request(app.getHttpServer())
+      .get("/me")
+      .set("Authorization", `Bearer ${withoutEmail}`);
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe("persisted@example.com");
+    expect(res.body.auth0Sub).toBe(sub);
+  });
 });

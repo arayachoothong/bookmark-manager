@@ -8,6 +8,7 @@ import {
 import type { User } from "@prisma/client";
 import { UsersService } from "../../users/application/users.service";
 import { JWT_VERIFIER, type JwtVerifierFn } from "../jwt-verifier.token";
+import type { JwtClaims } from "../infrastructure/jwt-verifier";
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -34,12 +35,14 @@ export class AccessTokenGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
+    let claims: JwtClaims;
     try {
-      const claims = await this.verifyAccessToken(token);
-      request.user = await this.usersService.findOrCreateFromClaims(claims);
-      return true;
+      claims = await this.verifyAccessToken(token);
     } catch {
       throw new UnauthorizedException();
     }
+
+    request.user = await this.usersService.findOrCreateFromClaims(claims);
+    return true;
   }
 }

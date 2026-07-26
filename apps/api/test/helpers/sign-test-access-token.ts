@@ -9,7 +9,8 @@ export async function signTestAccessToken(claims: {
   email?: string;
 }): Promise<string> {
   const { privateKey } = await getTestRs256KeyPair();
-  return new SignJWT({ email: claims.email })
+  const payload = claims.email !== undefined ? { email: claims.email } : {};
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: "RS256", kid: "test" })
     .setIssuer(TEST_AUTH0_ISSUER)
     .setAudience(TEST_AUTH0_AUDIENCE)
