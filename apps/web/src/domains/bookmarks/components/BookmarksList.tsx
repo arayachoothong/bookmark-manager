@@ -29,7 +29,9 @@ export function BookmarksList({
           showAssign={showAssign}
           onAssign={onAssign}
           onDelete={onDelete}
-          onRemove={onRemove}
+          onRemove={
+            bookmark.ownerId === currentUserId ? onRemove : undefined
+          }
         />
       ))}
     </ul>

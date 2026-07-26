@@ -110,17 +110,19 @@ export class BookmarksService {
       await this.assertCollectionsWritable(user.id, dto.collectionIds);
     }
 
-    let bookmark = await this.bookmarksRepository.update(id, {
+    const data: Parameters<BookmarksRepository["update"]>[1] = {
       url,
       title,
       notes: dto.notes ?? null,
-    });
-    if (dto.collectionIds !== undefined) {
-      bookmark = await this.bookmarksRepository.setCollectionIds(
-        id,
-        dto.collectionIds,
-      );
-    }
+    };
+    const bookmark =
+      dto.collectionIds === undefined
+        ? await this.bookmarksRepository.update(id, data)
+        : await this.bookmarksRepository.updateWithCollectionIds(
+            id,
+            data,
+            dto.collectionIds,
+          );
 
     return toBookmarkResponse(bookmark);
   }
@@ -142,13 +144,14 @@ export class BookmarksService {
     if (dto.notes !== undefined) {
       data.notes = dto.notes;
     }
-    let bookmark = await this.bookmarksRepository.update(id, data);
-    if (dto.collectionIds !== undefined) {
-      bookmark = await this.bookmarksRepository.setCollectionIds(
-        id,
-        dto.collectionIds,
-      );
-    }
+    const bookmark =
+      dto.collectionIds === undefined
+        ? await this.bookmarksRepository.update(id, data)
+        : await this.bookmarksRepository.updateWithCollectionIds(
+            id,
+            data,
+            dto.collectionIds,
+          );
     return toBookmarkResponse(bookmark);
   }
 

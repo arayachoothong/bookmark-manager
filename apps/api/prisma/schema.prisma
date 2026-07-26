@@ -53,6 +53,7 @@ model BookmarkCollection {
   collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@id([bookmarkId, collectionId])
+  @@index([collectionId])
 }
 
 model CollectionShare {

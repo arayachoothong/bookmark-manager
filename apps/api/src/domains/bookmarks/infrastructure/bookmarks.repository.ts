@@ -82,6 +82,33 @@ export class BookmarksRepository {
     });
   }
 
+  async updateWithCollectionIds(
+    bookmarkId: string,
+    data: Prisma.BookmarkUpdateInput,
+    collectionIds: string[],
+  ): Promise<BookmarkWithCollections> {
+    const uniqueIds = [...new Set(collectionIds)];
+    return this.prisma.$transaction(async (tx) => {
+      await tx.bookmark.update({
+        where: { id: bookmarkId },
+        data,
+      });
+      await tx.bookmarkCollection.deleteMany({ where: { bookmarkId } });
+      if (uniqueIds.length > 0) {
+        await tx.bookmarkCollection.createMany({
+          data: uniqueIds.map((collectionId) => ({
+            bookmarkId,
+            collectionId,
+          })),
+        });
+      }
+      return tx.bookmark.findUniqueOrThrow({
+        where: { id: bookmarkId },
+        include: collectionsInclude,
+      });
+    });
+  }
+
   async setCollectionIds(
     bookmarkId: string,
     collectionIds: string[],

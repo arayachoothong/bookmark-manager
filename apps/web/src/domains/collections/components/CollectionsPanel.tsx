@@ -107,7 +107,7 @@ export function CollectionsPanel() {
       <ConfirmDialog
         open={deleteCollectionId !== null}
         title="Delete collection?"
-        message="This permanently deletes the collection and its bookmarks. This cannot be undone."
+        message="This deletes the collection, but its bookmarks will be kept and become unassigned."
         confirmLabel="Delete"
         destructive
         busy={removeMutation.isPending}

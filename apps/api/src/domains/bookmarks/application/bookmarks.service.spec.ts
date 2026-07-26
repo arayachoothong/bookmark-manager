@@ -34,14 +34,17 @@ describe("BookmarksService", () => {
   let repository: jest.Mocked<BookmarksRepository>;
   let collectionAccess: jest.Mocked<CollectionAccessService>;
   let service: BookmarksService;
+  let updateWithCollectionIds: jest.Mock;
 
   beforeEach(() => {
+    updateWithCollectionIds = jest.fn();
     repository = {
       findById: jest.fn(),
       listReadableForUser: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       setCollectionIds: jest.fn(),
+      updateWithCollectionIds,
       addCollectionLinks: jest.fn(),
       removeCollectionLink: jest.fn(),
       delete: jest.fn(),
@@ -106,8 +109,7 @@ describe("BookmarksService", () => {
 
   it("replaces collection memberships when collectionIds are present", async () => {
     repository.findById.mockResolvedValue(bookmark());
-    repository.update.mockResolvedValue(bookmark());
-    repository.setCollectionIds.mockResolvedValue(
+    updateWithCollectionIds.mockResolvedValue(
       bookmark({ collections: [{ collectionId: "collection-2" }] }),
     );
 
@@ -117,10 +119,41 @@ describe("BookmarksService", () => {
       collectionIds: ["collection-2"],
     });
 
-    expect(repository.setCollectionIds).toHaveBeenCalledWith("bookmark-1", [
-      "collection-2",
-    ]);
+    expect(updateWithCollectionIds).toHaveBeenCalledWith(
+      "bookmark-1",
+      {
+        url: "https://example.com",
+        title: "Example",
+        notes: null,
+      },
+      ["collection-2"],
+    );
+    expect(repository.update).not.toHaveBeenCalled();
+    expect(repository.setCollectionIds).not.toHaveBeenCalled();
     expect(result.collectionIds).toEqual(["collection-2"]);
+  });
+
+  it("atomically patches fields and collection memberships", async () => {
+    repository.findById.mockResolvedValue(bookmark());
+    updateWithCollectionIds.mockResolvedValue(
+      bookmark({
+        title: "Updated",
+        collections: [{ collectionId: "collection-2" }],
+      }),
+    );
+
+    await service.patch(user, "bookmark-1", {
+      title: "Updated",
+      collectionIds: ["collection-2"],
+    });
+
+    expect(updateWithCollectionIds).toHaveBeenCalledWith(
+      "bookmark-1",
+      { title: "Updated" },
+      ["collection-2"],
+    );
+    expect(repository.update).not.toHaveBeenCalled();
+    expect(repository.setCollectionIds).not.toHaveBeenCalled();
   });
 
   it("leaves memberships unchanged when patch omits collectionIds", async () => {
