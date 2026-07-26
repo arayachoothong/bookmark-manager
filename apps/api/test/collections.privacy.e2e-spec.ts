@@ -66,6 +66,42 @@ describe("Collections privacy (e2e)", () => {
     };
   }
 
+  it("stranger cannot PATCH user A collection (404)", async () => {
+    const userA = await authRequest("auth0|col-patch-a", "col-patch-a@example.com");
+    const stranger = await authRequest(
+      "auth0|col-patch-stranger",
+      "col-patch-stranger@example.com",
+    );
+
+    const created = await userA
+      .post("/collections")
+      .send({ name: "Private patch target" })
+      .expect(201);
+
+    const res = await stranger
+      .patch(`/collections/${created.body.id}`)
+      .send({ name: "Stolen" });
+    expect(res.status).toBe(404);
+  });
+
+  it("stranger cannot DELETE user A collection (404)", async () => {
+    const userA = await authRequest("auth0|col-del-str-a", "col-del-str-a@example.com");
+    const stranger = await authRequest(
+      "auth0|col-del-stranger",
+      "col-del-stranger@example.com",
+    );
+
+    const created = await userA
+      .post("/collections")
+      .send({ name: "Private delete target" })
+      .expect(201);
+
+    const res = await stranger.delete(`/collections/${created.body.id}`);
+    expect(res.status).toBe(404);
+
+    await userA.get(`/collections/${created.body.id}`).expect(200);
+  });
+
   it("user B cannot GET user A private collection (404)", async () => {
     const userA = await authRequest("auth0|col-a", "col-a@example.com");
     const userB = await authRequest("auth0|col-b", "col-b@example.com");

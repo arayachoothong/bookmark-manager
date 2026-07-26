@@ -1,7 +1,6 @@
-import type { Collection } from "@prisma/client";
 import { ForbiddenError, NotFoundError } from "./collection.errors";
 import { CollectionAccessService } from "./collection-access.service";
-import { CollectionsRepository } from "../infrastructure/collections.repository";
+import type { CollectionAccessPort, CollectionAccessRecord } from "./collection-access.port";
 
 describe("CollectionAccessService", () => {
   const ownerId = "owner-1";
@@ -9,7 +8,7 @@ describe("CollectionAccessService", () => {
   const strangerId = "stranger-1";
   const collectionId = "col-1";
 
-  const collection: Collection = {
+  const collection: CollectionAccessRecord = {
     id: collectionId,
     name: "Reading",
     ownerId,
@@ -17,26 +16,19 @@ describe("CollectionAccessService", () => {
     updatedAt: new Date("2026-01-01"),
   };
 
-  let repository: jest.Mocked<
-    Pick<
-      CollectionsRepository,
-      "findById" | "findShare"
-    >
-  >;
+  let port: jest.Mocked<CollectionAccessPort>;
   let service: CollectionAccessService;
 
   beforeEach(() => {
-    repository = {
-      findById: jest.fn(),
-      findShare: jest.fn(),
+    port = {
+      findCollectionById: jest.fn(),
+      hasShare: jest.fn(),
     };
-    service = new CollectionAccessService(
-      repository as unknown as CollectionsRepository,
-    );
+    service = new CollectionAccessService(port);
   });
 
   it("owner can read and write", async () => {
-    repository.findById.mockResolvedValue(collection);
+    port.findCollectionById.mockResolvedValue(collection);
 
     await expect(
       service.assertCanReadCollection(ownerId, collectionId),
@@ -44,17 +36,12 @@ describe("CollectionAccessService", () => {
     await expect(
       service.assertCanWriteCollection(ownerId, collectionId),
     ).resolves.toEqual(collection);
-    expect(repository.findShare).not.toHaveBeenCalled();
+    expect(port.hasShare).not.toHaveBeenCalled();
   });
 
   it("grantee can read but not write", async () => {
-    repository.findById.mockResolvedValue(collection);
-    repository.findShare.mockResolvedValue({
-      id: "share-1",
-      collectionId,
-      granteeUserId: granteeId,
-      createdAt: new Date(),
-    });
+    port.findCollectionById.mockResolvedValue(collection);
+    port.hasShare.mockResolvedValue(true);
 
     await expect(
       service.assertCanReadCollection(granteeId, collectionId),
@@ -66,8 +53,8 @@ describe("CollectionAccessService", () => {
   });
 
   it("stranger read returns not found", async () => {
-    repository.findById.mockResolvedValue(collection);
-    repository.findShare.mockResolvedValue(null);
+    port.findCollectionById.mockResolvedValue(collection);
+    port.hasShare.mockResolvedValue(false);
 
     await expect(
       service.assertCanReadCollection(strangerId, collectionId),
@@ -79,7 +66,7 @@ describe("CollectionAccessService", () => {
   });
 
   it("missing collection returns not found for read and write", async () => {
-    repository.findById.mockResolvedValue(null);
+    port.findCollectionById.mockResolvedValue(null);
 
     await expect(
       service.assertCanReadCollection(ownerId, collectionId),
